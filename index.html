@@ -477,12 +477,12 @@ function drawCloud(x,y){
 
 function drawGround(){
   for(const s of solids){
-    const sx=s.x-cam;
+   const sx=Math.round(s.x-cam);
     if(sx>W||sx+s.w<0)continue;
     if(SPR.brick){
       for(let ty=s.y;ty<s.y+s.h;ty+=TILE)
         for(let tx=sx;tx<sx+s.w;tx+=TILE)
-          ctx.drawImage(SPR.brick,tx,ty,TILE,TILE);
+         ctx.drawImage(SPR.brick,Math.round(tx),Math.round(ty),TILE,TILE);
     } else {
       px(sx,s.y,s.w,s.h,COL.ground);
       px(sx,s.y,s.w,6,COL.groundTop);
