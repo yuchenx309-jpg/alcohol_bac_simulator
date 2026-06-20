@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>清醒大冒險｜躲酒精小遊戲</title>
+<style>
+:root{
+  --bg:#140f0a;--bg2:#1d150c;--cream:#f6ecd8;--muted:#bda988;--faint:#8a795e;
+  --amber:#f0b54a;--amber2:#d4892a;--gold:#0600bb;--red:#e24a3a;--green:#7ac77a;
+  --serif:"Playfair Display","Noto Serif TC",Georgia,serif;
+  --han:"Noto Serif TC","Songti TC",serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--cream);
+  font-family:var(--han);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:100dvh;padding:14px;overflow:hidden;touch-action:none}
+.title{font-family:var(--serif);font-weight:900;font-size:clamp(20px,4.5vw,30px);letter-spacing:.01em;margin:0 0 10px;text-align:center}
+.title em{font-style:italic;color:var(--amber)}
+.frame{position:relative;width:min(960px,96vw);aspect-ratio:16/9;border-radius:14px;overflow:hidden;
+  border:3px solid var(--amber);box-shadow:0 22px 60px rgba(0,0,0,.5),0 0 0 1px rgba(240,181,74,.3)}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated;background:#48a7ff}
+
+/* overlays */
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;background:rgba(20,15,10,.86);backdrop-filter:blur(3px);padding:22px;z-index:5}
+.overlay.hide{display:none}
+.overlay h2{font-family:var(--serif);font-size:clamp(26px,6vw,46px);margin:0 0 10px;font-weight:900}
+.overlay h2.win{color:var(--green)}.overlay h2.lose{color:var(--red)}
+.overlay p{color:var(--muted);max-width:42ch;line-height:1.7;margin:0 0 8px;font-size:15px}
+.keys{color:var(--faint);font-size:13px;margin:14px 0 22px;line-height:1.9}
+.keys b{color:var(--cream)}
+.btn{border:0;border-radius:13px;padding:15px 38px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;
+  background:linear-gradient(100deg,var(--amber),var(--amber2));color:#2a1c08;box-shadow:0 12px 30px rgba(240,181,74,.3);transition:.2s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+a.btn{display:inline-block;text-decoration:none;text-align:center}
+.btn.ghost{background:rgba(246,236,216,.08);color:var(--muted);box-shadow:none}
+.btn.ghost:hover{background:rgba(226,74,58,.14);color:#fff}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.score-final{font-family:var(--serif);font-size:34px;color:var(--gold);margin:6px 0 4px}
+
+/* touch controls */
+.touch{position:absolute;inset:0;z-index:4;display:none;pointer-events:none}
+.touch.on{display:block}
+.tbtn{position:absolute;bottom:16px;width:64px;height:64px;border-radius:50%;
+  background:rgba(246,236,216,.14);border:2px solid rgba(246,236,216,.3);
+  display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--cream);
+  pointer-events:auto;user-select:none;backdrop-filter:blur(2px)}
+.tbtn:active{background:rgba(226,74,58,.4)}
+#tLeft{left:16px}#tRight{left:92px}#tJump{right:16px;width:78px;height:78px;background:rgba(240,181,74,.25)}
+.hintbar{margin-top:12px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<h1 class="title">清醒大冒險 <em>· 躲酒精</em></h1>
+<div class="frame">
+  <canvas id="game" width="640" height="360"></canvas>
+
+  <div class="overlay" id="startScr">
+    <h2>清醒<span style="color:var(--amber)">大冒險</span></h2>
+    <p>酒精怪擋在回家的路上。跳過它們、或從上面踩扁它們,撿醫藥箱補命,平安抵達終點旗!</p>
+    <div class="keys">
+      電腦:<b>← →</b> 移動　<b>空白鍵 / ↑</b> 跳<br>
+      手機:畫面下方按鈕操作<br>
+      ❤ 三條命 · 踩酒精怪 +100 · 醫藥箱回血
+    </div>
+    <button class="btn" id="startBtn">開始遊戲</button>
+    <p style="margin-top:14px"><a href="alcohol_bac_simulator.html" style="color:var(--amber);font-size:13px">略過遊戲,直接填問卷 →</a></p>
+  </div>
+
+  <div class="overlay hide" id="endScr">
+    <h2 id="endTitle"></h2>
+    <div class="score-final" id="endScore"></div>
+    <p id="endMsg"></p>
+    <div class="btnrow">
+      <a class="btn" id="toSurveyBtn" href="alcohol_bac_simulator.html">前往問卷 →</a>
+      <button class="btn ghost" id="againBtn">再玩一次</button>
+    </div>
+  </div>
+
+  <!-- touch controls -->
+  <div class="touch" id="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tJump">⤒</div>
+  </div>
+</div>
+<div class="hintbar">推廣理性飲酒觀念，建立健康生活文化</div>
+
+<script>
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const SPR={};
+['player','player_cap','enemy','token','brick','heart','heart_empty','cloud','hill_1','hill_2','hill_3'].forEach(k=>{
+  const img=new Image();
+  img.onload=()=>SPR[k]=img;
+  img.src='public/'+k+'.png';
+});
+
+const W=cv.width,H=cv.height;
+
+/* ---------- palette (site colors) ---------- */
+const COL={
+     sky1:'#5b8fe0', sky2:'#7fa9ec',
+  ground:'#d4892a', groundDark:'#b5731f', groundTop:'#f0b54a',
+  brick:'#c8772a', brickLine:'#8a4e16',
+  cream:'#f6ecd8', skin:'#f3d8a8',
+  player:'#3a78c0', player2:'#2a5a96', cap:'#e24a3a',
+  enemy:'#9a6bce', enemy2:'#6f3fb0', enemyEye:'#f6ecd8',
+  bottle:'#7ac77a', bottleCap:'#cf7e22',
+  medkit:'#f6ecd8', medCross:'#e24a3a',
+  flag:'#7ac77a', pole:'#bda988', hill:'#3f9d5e', cloud:'#f6ecd8',
+  amber:'#f0b54a', gold:'#f7c95e', shadow:'rgba(0,0,0,.25)'
+};
+
+/* ---------- world ---------- */
+const TILE=32, GRAV=0.62, MOVE=0.85, FRICTION=.80, MAXVX=4.2, JUMP=12.2;
+const LEVEL_W=220; // tiles
+let cam=0, score=0, lives=3, started=false, ended=false, won=false;
+let frame=0;
+let demo=false;
+
+/* level layout: build ground with gaps, platforms */
+const solids=[]; // {x,y,w,h}
+function addSolid(tx,ty,tw,th){solids.push({x:tx*TILE,y:ty*TILE,w:tw*TILE,h:th*TILE})}
+const GROUND_Y=9; // tile row where ground top sits (canvas 360/32 ≈ 11 rows)
+function buildLevel(){
+  solids.length=0;
+  let x=0;
+  // 起點先給一段安全地面
+  addSolid(x,GROUND_Y,12,3); x+=12;
+  while(x<LEVEL_W-14){
+    // 隨機坑寬：2 或 3 格（人能跳 5，留餘地）
+    const gap=2+Math.floor(Math.random()*2); // 2~3
+    // 坑太寬就放輔助跳台（這裡坑最多3格其實跳得過，但保留邏輯讓你之後想加寬也安全）
+    if(gap>=4){
+      const midX=x+Math.floor(gap/2);
+      addSolid(midX,GROUND_Y-3,2,1); // 坑中間的浮島
+    }
+    x+=gap;
+    // 隨機地面段長：6~12 格
+    const len=6+Math.floor(Math.random()*7);
+    addSolid(x,GROUND_Y,len,3);
+    // 這段地面上，隨機決定要不要放一個浮空平台
+    if(Math.random()<0.5){
+      const py=GROUND_Y-3-Math.floor(Math.random()*2); // 地面上2~3格高，跳得上
+      const pw=2+Math.floor(Math.random()*2);          // 寬2~3格
+      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
+      addSolid(pxs,py,pw,1);
+    }
+    x+=len;
+  }
+  // 終點前補一段長地面，確保旗子站得住
+  addSolid(x,GROUND_Y,14,3);
+}
+
+
+/* enemies (alcohol monsters) */
+let enemies=[];
+function buildEnemies(){
+  enemies=[];
+  const spots=[24,34,46,52,63,72,78,88,98,108,118,130,142,152,162,172,184,196,206];
+  spots.forEach((tx,i)=>{
+    const ex=tx*TILE, ey=(GROUND_Y-1)*TILE;
+    // 檢查這隻怪腳下是不是有主地面，沒有就跳過（避免生在坑上）
+    const footY=ey+30;
+    let onGround=false;
+    for(const s of solids){
+      if(ex+13>s.x && ex+13<s.x+s.w && Math.abs(footY-s.y)<6){onGround=true;break}
+    }
+    if(onGround) enemies.push({x:ex,y:ey,w:26,h:30,vx:(i%2?-1:1)*0.9,alive:true,t:i*7});
+  });
+}
+
+/* medkits */
+let kits=[];
+function buildKits(){
+  kits=[];
+  // 在隨機地面段裡，挑幾段放醫藥箱（站在地面上）
+  let count=0;
+  for(const s of solids){
+    if(s.y!==GROUND_Y*TILE)continue;
+    if(Math.random()<0.35 && count<6){        // 約35%機率、最多6個
+      const kx=s.x+Math.floor(s.w/2)-12;       // 放在該段地面中間
+      kits.push({x:kx,y:(GROUND_Y-2)*TILE,w:24,h:22,taken:false,t:count*11});
+      count++;
+    }
+  }
+}
+
+
+/* coins-ish amber tokens */
+let tokens=[];
+function buildTokens(){
+  tokens=[];
+  // 沿著每一塊「主地面」上方撒金幣，飄在空中、不碰磚塊
+  for(const s of solids){
+    if(s.y!==GROUND_Y*TILE)continue;          // 只在主地面上方放
+    const tilesWide=Math.floor(s.w/TILE);
+    for(let i=1;i<tilesWide-1;i+=2){          // 每隔一格放一個，避免太密
+      if(Math.random()<0.5)continue;          // 一半機率跳過，分佈自然
+      const tx=s.x+i*TILE+TILE/2;
+      const ty=s.y-TILE*(1+Math.floor(Math.random()*2)); // 地面上方1~2格高的空中
+      tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
+    }
+  }
+}
+
+/* flag at end */
+const flag={x:(LEVEL_W-6)*TILE,y:(GROUND_Y-7)*TILE,w:6,h:7*TILE};
+
+/* player */
+const P={x:60,y:0,w:24,h:30,vx:0,vy:0,onGround:false,face:1,inv:0,dead:false};
+
+/* input */
+const keys={};
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key))e.preventDefault();
+  keys[e.key]=true;
+  if(e.key==='d'||e.key==='D'){                 // 按 D 開關自動展示
+    demo=!demo;
+    if(demo && !started){                        // 還沒開始就自動開始
+      document.getElementById('startScr').classList.add('hide');
+      reset(true);started=true;ended=false;
+    }
+  }
+});
+
+addEventListener('keyup',e=>keys[e.key]=false);
+// touch
+function bindTouch(id,k){
+  const el=document.getElementById(id);
+  const set=v=>e=>{e.preventDefault();keys[k]=v};
+  el.addEventListener('touchstart',set(true),{passive:false});
+  el.addEventListener('touchend',set(false),{passive:false});
+  el.addEventListener('touchcancel',set(false),{passive:false});
+  el.addEventListener('mousedown',set(true));
+  el.addEventListener('mouseup',set(false));
+  el.addEventListener('mouseleave',set(false));
+}
+bindTouch('tLeft','ArrowLeft');bindTouch('tRight','ArrowRight');bindTouch('tJump',' ');
+if('ontouchstart' in window)document.getElementById('touch').classList.add('on');
+
+/* ---------- physics helpers ---------- */
+function rectHit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function collideSolids(o){
+  o.onGround=false;
+  // X
+  o.x+=o.vx;
+  for(const s of solids){if(rectHit(o,s)){
+    if(o.vx>0)o.x=s.x-o.w; else if(o.vx<0)o.x=s.x+s.w; o.vx=0;
+  }}
+  // Y
+  o.y+=o.vy;
+  for(const s of solids){if(rectHit(o,s)){
+    if(o.vy>0){o.y=s.y-o.h;o.onGround=true} else if(o.vy<0)o.y=s.y+s.h; o.vy=0;
+  }}
+}
+
+function reset(full){
+  buildLevel();buildEnemies();buildKits();buildTokens();
+  P.x=60;P.y=(GROUND_Y-2)*TILE;P.vx=0;P.vy=0;P.inv=0;P.dead=false;P.face=1;
+  cam=0;
+  if(full){score=0;lives=3;won=false;ended=false}
+}
+function respawn(){
+  // 不重建關卡、不回起點：把玩家放回附近安全的地面上
+  let safeX=P.x;
+  // 找離當前位置最近、且站得住的地面格
+  let best=null,bestDist=1e9;
+  for(const s of solids){
+    if(s.y!==GROUND_Y*TILE)continue; // 只找主地面
+    const cx=Math.max(s.x,Math.min(P.x,s.x+s.w-P.w));
+    const d=Math.abs(cx-P.x);
+    if(d<bestDist){bestDist=d;best={x:cx,y:s.y-P.h};}
+  }
+  if(best){P.x=best.x;P.y=best.y-40;}
+  else{P.x=Math.max(60,P.x-80);P.y=0;}
+  P.vx=0;P.vy=0;P.dead=false;P.inv=90; // 短暫無敵
+}
+/* ---------- update ---------- */
+function update(){
+  frame++;
+
+    // ===== 自動展示模式：AI 自己跑跳躲 =====
+  if(!demo){
+    // demo 關閉時，清掉 AI 之前按下的鍵，交還給玩家
+    if(keys.__ai){keys['ArrowRight']=false;keys[' ']=false;keys.__ai=false;}
+  }
+  if(demo && !P.dead){
+    keys.__ai=true;                    // 標記：現在是 AI 在控制
+    // 預設一直往右跑
+    keys['ArrowRight']=true; keys['ArrowLeft']=false;
+    let wantJump=false;
+
+    // 1) 偵測前方是否有坑（前方一格地面消失就跳）
+    const aheadX=P.x+P.w+TILE;
+    const footY=P.y+P.h+2;
+    let groundAhead=false;
+    for(const s of solids){
+      if(aheadX>s.x&&aheadX<s.x+s.w&&footY>=s.y&&footY<s.y+s.h+8){groundAhead=true;break}
+    }
+    if(!groundAhead && P.onGround) wantJump=true;
+
+    // 2) 偵測前方有酒精怪 → 跳上去踩它
+    for(const e of enemies){
+      if(!e.alive)continue;
+      const dx=e.x-(P.x+P.w);
+      if(dx>0&&dx<TILE*2&&Math.abs(e.y-P.y)<TILE){wantJump=true;break}
+    }
+
+    // 3) 偵測前方有比自己高的平台擋路 → 跳上去
+    for(const s of solids){
+      const dx=s.x-(P.x+P.w);
+      if(dx>-4&&dx<TILE*1.2 && s.y<P.y+P.h-4 && s.y>P.y-TILE*2){
+        if(P.onGround)wantJump=true;break;
+      }
+    }
+
+    keys[' ']=wantJump;   // 把「想跳」交給原本的跳躍程式
+  }
+  // ===== 自動展示模式結束 =====
+
+
+ if(P.dead){
+    P.vy+=GRAV;P.y+=P.vy;
+    if(P.y>H+80){
+      if(lives<=0){endGame(false)} else {respawn()}
+    }
+    return;
+  }
+  // horizontal
+  if(keys['ArrowLeft']){P.vx-=MOVE;P.face=-1}
+  if(keys['ArrowRight']){P.vx+=MOVE;P.face=1}
+  P.vx*=FRICTION;
+  P.vx=Math.max(-MAXVX,Math.min(MAXVX,P.vx));
+  if(Math.abs(P.vx)<.05)P.vx=0;
+  // jump
+  if((keys[' ']||keys['ArrowUp'])&&P.onGround){P.vy=-JUMP;P.onGround=false}
+  P.vy+=GRAV;if(P.vy>16)P.vy=16;
+  collideSolids(P);
+  if(P.inv>0)P.inv--;
+
+  // fall off world
+  if(P.y>H+40 && !P.dead){
+    if(demo){respawn();}      // 展示模式掉坑：直接撈回最近地面，繼續跑
+    else hurt(true);
+  }
+
+  // enemies
+  for(const e of enemies){
+    if(!e.alive)continue;
+    e.t++;
+    e.x+=e.vx;
+    // turn at platform edges / walls
+    let grounded=false;
+    for(const s of solids){
+      // wall bump
+      if(e.x<s.x+s.w&&e.x+e.w>s.x&&e.y<s.y+s.h&&e.y+e.h>s.y){
+        if(e.vx>0)e.x=s.x-e.w; else e.x=s.x+s.w; e.vx*=-1;
+      }
+    }
+    // keep on its ground row; flip at ledge
+    const aheadX=e.vx>0?e.x+e.w+2:e.x-2;
+    let support=false;
+    for(const s of solids){
+      if(aheadX>s.x&&aheadX<s.x+s.w&&Math.abs((e.y+e.h)-s.y)<6){support=true;break}
+    }
+    if(!support){
+      e.vx=-e.vx;                    // 轉頭
+      e.x+=e.vx>0?3:-3;              // 往新方向推離邊緣，避免來回卡死
+      if(Math.abs(e.vx)<0.6)e.vx=(e.vx>=0?1:-1)*0.9; // 速度太小就補回正常速度
+    }
+    e.y=(GROUND_Y-1)*TILE;
+    // collision with player
+    if(P.inv===0&&!P.dead&&rectHit(P,e)){
+      const stomp = P.vy>0 && (P.y+P.h - e.y) < 18;
+      if(stomp){e.alive=false;P.vy=-7.5;score+=100;pop(e.x+e.w/2,e.y,'+100')}
+      else hurt(false);
+    }
+  }
+
+  // medkits
+  for(const k of kits){
+    if(k.taken)continue;k.t++;
+    if(rectHit(P,k)){k.taken=true;if(lives<3){lives++;pop(k.x+12,k.y,'+1 ❤')}else{score+=50;pop(k.x+12,k.y,'+50')}}
+  }
+  // tokens
+  for(const t of tokens){
+    if(t.taken)continue;t.t++;
+    if(P.x<t.x+t.r&&P.x+P.w>t.x-t.r&&P.y<t.y+t.r&&P.y+P.h>t.y-t.r){t.taken=true;score+=10}
+  }
+
+  // flag / win
+  if(P.x+P.w>flag.x+10 && !won){won=true;endGame(true)}
+
+  // camera
+  const target=P.x-W*0.38;
+  cam+=(target-cam)*0.12;
+  cam=Math.max(0,Math.min(cam,LEVEL_W*TILE-W));
+}
+
+let pops=[];
+function pop(x,y,txt){pops.push({x,y,txt,life:50})}
+
+function hurt(fatal){
+  if(demo)return;              // 自動展示模式：無敵，不扣血不死
+  if(P.inv>0&&!fatal)return;
+  lives--;
+  if(lives<=0||fatal){
+    P.dead=true;P.vy=-9;
+    if(lives<0)lives=0;
+  }else{
+    P.inv=90;P.vy=-7;P.vx=-P.face*4;
+  }
+}
+
+
+function endGame(victory){
+  ended=true;started=false;
+  document.getElementById('endScr').classList.remove('hide');
+  const t=document.getElementById('endTitle');
+  if(victory){t.textContent='平安到家! 🏁';t.className='win';
+    document.getElementById('endMsg').textContent='你成功避開了所有酒精怪。接下來,看看酒精在你體內的真實數據吧。';}
+  else{t.textContent='被酒精怪追上了…';t.className='lose';
+    document.getElementById('endMsg').textContent='沒關係。先看看酒精在身體裡會怎麼變化,再來挑戰一次。';}
+    document.getElementById('endScore').textContent='得分 '+score;
+}
+
+
+/* ---------- pixel drawing ---------- */
+function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+
+function drawBg(){
+  // sky gradient
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,COL.sky2);g.addColorStop(1,COL.sky1);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // parallax hills
+   const hillSizes=[120,90,105]; // 三種盆栽各自的顯示寬度，大小不一樣
+  for(let i=0;i<14;i++){
+         const offset=[0,-40,20,55,-25,35,-15][i%7];
+    const span=180;
+    const scroll=(cam*0.4)%(span*14);            // 用整排總寬度循環，避免硬跳
+    const hx=i*span - scroll - 90 + offset;
+
+    const idx=i%3+1;              // 改成 3 種輪流：1、2、3
+    const hillSpr=SPR['hill_'+idx];
+    if(hillSpr){
+      const dispW=hillSizes[i%3];                          // 三種各自的寬
+      const dispH=dispW*(hillSpr.height/hillSpr.width);   // 高度照原圖比例
+      ctx.save();
+      ctx.globalAlpha=0.82;                               // 透明度（0~1，0.82微透）
+      ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
+      ctx.restore();                                      // restore 讓透明度只影響盆栽
+    } else {
+      drawHill(hx,GROUND_Y*TILE,120,70);
+    }
+  }
+
+  // clouds
+  for(let i=0;i<8;i++){
+    const cx=i*260 - (cam*0.25)%260;
+    if(SPR.cloud)ctx.drawImage(SPR.cloud,cx+24,44+(i%3)*26,80,44);
+    else drawCloud(cx+40, 50+(i%3)*26);
+  }
+}
+function drawHill(x,baseY,w,h){
+  ctx.fillStyle=COL.hill;
+  ctx.beginPath();ctx.moveTo(x,baseY);ctx.quadraticCurveTo(x+w/2,baseY-h,x+w,baseY);ctx.closePath();ctx.fill();
+}
+function drawCloud(x,y){
+  ctx.fillStyle=COL.cloud;
+  [[0,8,16],[14,0,20],[30,6,16],[12,10,26]].forEach(([dx,dy,r])=>{ctx.beginPath();ctx.arc(x+dx,y+dy,r,0,7);ctx.fill()});
+}
+
+function drawGround(){
+  for(const s of solids){
+    const sx=s.x-cam;
+    if(sx>W||sx+s.w<0)continue;
+    if(SPR.brick){
+      for(let ty=s.y;ty<s.y+s.h;ty+=TILE)
+        for(let tx=sx;tx<sx+s.w;tx+=TILE)
+          ctx.drawImage(SPR.brick,tx,ty,TILE,TILE);
+    } else {
+      px(sx,s.y,s.w,s.h,COL.ground);
+      px(sx,s.y,s.w,6,COL.groundTop);
+      ctx.strokeStyle=COL.brickLine;ctx.lineWidth=1;
+      for(let yy=s.y+6;yy<s.y+s.h;yy+=16){ctx.beginPath();ctx.moveTo(sx,yy+.5);ctx.lineTo(sx+s.w,yy+.5);ctx.stroke();}
+      for(let xx=sx+16;xx<sx+s.w;xx+=32){ctx.beginPath();ctx.moveTo(xx+.5,s.y+6);ctx.lineTo(xx+.5,s.y+s.h);ctx.stroke();}
+    }
+  }
+}
+
+function drawTokens(){
+  for(const t of tokens){
+    if(t.taken)continue;const x=t.x-cam,y=t.y;
+    if(x<-10||x>W+10)continue;
+    const bob=Math.sin((t.t)/12)*3;
+    if(SPR.token){ctx.drawImage(SPR.token,x-t.r,y+bob-t.r,t.r*2,t.r*2);}
+    else{ctx.fillStyle=COL.gold;ctx.beginPath();ctx.arc(x,y+bob,t.r,0,7);ctx.fill();
+    ctx.fillStyle=COL.amber2;ctx.beginPath();ctx.arc(x,y+bob,t.r*.5,0,7);ctx.fill();}
+  }
+}
+
+function drawKit(k){
+  if(k.taken)return;const x=k.x-cam,y=k.y+Math.sin(k.t/15)*3;
+  if(x<-30||x>W+30)return;
+  px(x,y,k.w,k.h,COL.medkit);
+  ctx.strokeStyle=COL.faint||'#8a795e';ctx.strokeRect(x+.5,y+.5,k.w-1,k.h-1);
+  // red cross
+  px(x+k.w/2-3,y+4,6,k.h-8,COL.medCross);
+  px(x+5,y+k.h/2-3,k.w-10,6,COL.medCross);
+}
+
+function drawEnemy(e){
+  if(!e.alive)return;const x=e.x-cam,y=e.y;
+  if(x<-40||x>W+40)return;const sway=Math.sin(e.t/8)*1.5;
+  if(SPR.enemy){
+    const flip=e.vx>0?1:-1;
+    ctx.save();
+    if(flip<0){ctx.scale(-1,1);ctx.drawImage(SPR.enemy,-(x+e.w),y,e.w,e.h)}
+    else ctx.drawImage(SPR.enemy,x,y,e.w,e.h);
+    ctx.restore();
+    return;
+  }
+
+  // body = a wobbling purple alcohol blob with bottle hint
+  px(x+sway,y+6,e.w,e.h-6,COL.enemy);
+  px(x+sway,y+6,e.w,5,COL.enemy2);          // top shade
+  // bottle neck
+  px(x+e.w/2-4+sway,y,8,8,COL.bottleCap);
+  // eyes
+  px(x+5+sway,y+14,5,6,COL.enemyEye);
+  px(x+e.w-10+sway,y+14,5,6,COL.enemyEye);
+  px(x+6+sway,y+16,2,3,'#2a1c08');
+  px(x+e.w-9+sway,y+16,2,3,'#2a1c08');
+  // angry brow
+  ctx.strokeStyle='#2a1c08';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x+4+sway,y+12);ctx.lineTo(x+11+sway,y+15);
+  ctx.moveTo(x+e.w-4+sway,y+12);ctx.lineTo(x+e.w-11+sway,y+15);ctx.stroke();
+  // feet
+  const fp=Math.sin(e.t/6)>0?2:-2;
+  px(x+3+sway,y+e.h-3,7,4,COL.enemy2);
+  px(x+e.w-10+sway+fp,y+e.h-3,7,4,COL.enemy2);
+}
+
+function drawPlayer(){
+  if(P.inv>0 && frame%6<3 && !P.dead)return;
+  const x=P.x-cam,y=P.y,f=P.face;
+ if(SPR.player){
+    const spr=(!P.onGround&&SPR.player_cap)?SPR.player_cap:SPR.player;
+    ctx.save();
+    if(f<0){ctx.scale(-1,1);ctx.drawImage(spr,-(x+P.w),y,P.w,P.h)}
+    else ctx.drawImage(spr,x,y,P.w,P.h);
+    ctx.restore();
+    return;
+  }
+
+  const walk=P.onGround&&Math.abs(P.vx)>.6?Math.sin(frame/4):0;
+  // legs
+  px(x+4,y+24,6,6,COL.player2);
+  px(x+P.w-10,y+24-walk*2,6,6,COL.player2);
+  // body (blue overalls)
+  px(x+3,y+12,P.w-6,14,COL.player);
+  px(x+3,y+12,P.w-6,4,COL.player2);
+  // head/skin
+  px(x+5,y+2,P.w-10,12,COL.skin);
+  // cap (red)
+  px(x+4,y,P.w-8,5,COL.cap);
+  px(f>0?x+P.w-6:x+2,y+2,4,3,COL.cap); // brim
+  // eye
+  px(f>0?x+P.w-9:x+6,y+6,3,3,'#2a1c08');
+  // arm
+  px(f>0?x+P.w-5:x+1,y+13,4,8,COL.skin);
+}
+
+function drawFlag(){
+  const x=flag.x-cam;
+  if(x>W+40||x+flag.w*TILE<-40)return;
+  // pole
+  px(x,flag.y,5,flag.h,COL.pole);
+  // wave flag
+  const wav=Math.sin(frame/10)*4;
+  ctx.fillStyle=COL.flag;
+  ctx.beginPath();ctx.moveTo(x+5,flag.y+6);ctx.lineTo(x+40+wav,flag.y+18);ctx.lineTo(x+5,flag.y+30);ctx.closePath();ctx.fill();
+  // base block
+  px(x-12,(GROUND_Y)*TILE-18,30,18,COL.amber);
+  // medical cross on flag
+  px(x+16,flag.y+13,5,8,COL.cream);px(x+13,flag.y+16,11,3,COL.cream);
+}
+
+function drawPops(){
+  ctx.font='bold 15px "Noto Serif TC",serif';ctx.textAlign='center';
+  pops=pops.filter(p=>p.life>0);
+  for(const p of pops){p.life--;p.y-=.6;
+    ctx.fillStyle=`rgba(247,201,94,${p.life/50})`;
+    ctx.fillText(p.txt,p.x-cam,p.y);
+  }
+  ctx.textAlign='left';
+}
+
+function drawHUD(){
+  ctx.font='bold 16px "Noto Serif TC",serif';
+  ctx.fillStyle=COL.cream;
+  ctx.fillText('得分 '+score,14,26);
+  // lives hearts
+  for(let i=0;i<3;i++){
+    const on=i<lives;
+    if(SPR.heart&&SPR.heart_empty){
+      ctx.drawImage(on?SPR.heart:SPR.heart_empty,W-44-i*28,10,22,22);
+    }else{
+      const hx=W-30-i*26, hy=18;
+      ctx.fillStyle=on?COL.red:'rgba(246,236,216,.18)';
+      ctx.beginPath();
+      ctx.moveTo(hx,hy+4);ctx.bezierCurveTo(hx,hy,hx-7,hy,hx-7,hy+5);
+      ctx.bezierCurveTo(hx-7,hy+10,hx,hy+12,hx,hy+15);
+      ctx.bezierCurveTo(hx,hy+12,hx+7,hy+10,hx+7,hy+5);
+      ctx.bezierCurveTo(hx+7,hy,hx,hy,hx,hy+4);ctx.fill();
+    }
+  }
+  if(demo){ctx.fillStyle=COL.amber;ctx.font='bold 14px "Noto Serif TC",serif';ctx.fillText('● AUTO 自動展示中（按 D 關閉）',W/2-90,24);}
+  // distance bar
+
+  const prog=Math.min(1,P.x/(flag.x));
+  px(14,34,160,6,'rgba(246,236,216,.15)');
+  px(14,34,160*prog,6,COL.amber);
+}
+
+/* ---------- loop ---------- */
+function loop(){
+  if(started&&!ended)update();
+  drawBg();drawGround();drawTokens();
+  for(const k of kits)drawKit(k);
+  for(const e of enemies)drawEnemy(e);
+  drawFlag();
+  drawPlayer();drawPops();drawHUD();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- buttons ---------- */
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('startScr').classList.add('hide');
+  reset(true);started=true;ended=false;
+};
+document.getElementById('againBtn').onclick=()=>{
+  document.getElementById('endScr').classList.add('hide');
+  reset(true);started=true;ended=false;
+};
+
+reset(true);started=false;
+loop();
+</script>
+</body>
+</html>
