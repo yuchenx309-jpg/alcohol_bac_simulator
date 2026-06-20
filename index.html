@@ -41,14 +41,16 @@ a.btn{display:inline-block;text-decoration:none;text-align:center}
 .score-final{font-family:var(--serif);font-size:34px;color:var(--gold);margin:6px 0 4px}
 
 /* touch controls */
-.touch{position:absolute;inset:0;z-index:4;display:none;pointer-events:none}
-.touch.on{display:block}
-.tbtn{position:absolute;bottom:16px;width:64px;height:64px;border-radius:50%;
+.touch{display:none;pointer-events:none;width:min(960px,96vw);margin-top:10px;z-index:4}
+.touch.on{display:flex;justify-content:space-between;align-items:center}
+.tbtn{width:64px;height:64px;border-radius:50%;
   background:rgba(246,236,216,.14);border:2px solid rgba(246,236,216,.3);
   display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--cream);
   pointer-events:auto;user-select:none;backdrop-filter:blur(2px)}
 .tbtn:active{background:rgba(226,74,58,.4)}
-#tLeft{left:16px}#tRight{left:92px}#tJump{right:16px;width:78px;height:78px;background:rgba(240,181,74,.25)}
+#tLeft{margin-left:18px}
+#tRight{margin-right:auto;margin-left:12px}
+#tJump{margin-right:18px;width:78px;height:78px;background:rgba(240,181,74,.25)}
 .hintbar{margin-top:12px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.6}
 </style>
 </head>
@@ -79,13 +81,15 @@ a.btn{display:inline-block;text-decoration:none;text-align:center}
     </div>
   </div>
 
-  <!-- touch controls -->
+ 
+</div>
+   <!-- touch controls -->
   <div class="touch" id="touch">
     <div class="tbtn" id="tLeft">◀</div>
     <div class="tbtn" id="tRight">▶</div>
     <div class="tbtn" id="tJump">⤒</div>
   </div>
-</div>
+  
 <div class="hintbar">推廣理性飲酒觀念，建立健康生活文化</div>
 
 <script>
