@@ -132,39 +132,37 @@ const GROUND_Y=9; // tile row where ground top sits (canvas 360/32 ≈ 11 rows)
 function buildLevel(){
   solids.length=0;
   let x=0;
-  // 起點先給一段安全地面
-  addSolid(x,GROUND_Y,12,3); x+=12;
+
+  addSolid(x,GROUND_Y,12,3);
+  x+=12;
+
   while(x<LEVEL_W-14){
-    // 隨機坑寬：2 或 3 格（人能跳 5，留餘地）
-    const gap=2+Math.floor(Math.random()*2); // 2~3
-    // 坑太寬就放輔助跳台（這裡坑最多3格其實跳得過，但保留邏輯讓你之後想加寬也安全）
-    if(gap>=4){
-      const midX=x+Math.floor(gap/2);
-      addSolid(midX,GROUND_Y-3,2,1); // 坑中間的浮島
-    }
+
+    const gap=2+Math.floor(Math.random()*3); // 2~4格安全洞
     x+=gap;
-    // 隨機地面段長：6~12 格
-    const len=6+Math.floor(Math.random()*7);
+
+    const len=6+Math.floor(Math.random()*7); // 6~12格地面
     addSolid(x,GROUND_Y,len,3);
-    // 這段地面上，隨機決定要不要放一個浮空平台
-    if(Math.random()<0.65){
-  const pw=2+Math.floor(Math.random()*2);
-  const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
 
-  // 第一層（穩定平台，一定跳得上）
-  addSolid(pxs,GROUND_Y-2,pw,1);
+    // 第一層平台
+    if(Math.random()<0.6){
+      const pw=2+Math.floor(Math.random()*2);
+      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
+      const py=GROUND_Y-2;
 
-  // 第二層（高一點的平台，有機率出現）
-  if(Math.random()<0.45){
-    addSolid(pxs+1,GROUND_Y-4,pw-1,1);
-  }
-}
+      addSolid(pxs,py,pw,1);
+
+      // 第二層平台（少量）
+      if(Math.random()<0.25){
+        addSolid(pxs+1,GROUND_Y-4,2,1);
+      }
+    }
+
     x+=len;
   }
-  // 終點前補一段長地面，確保旗子站得住
+
   addSolid(x,GROUND_Y,14,3);
 }
-
 
 /* enemies (alcohol monsters) */
 let enemies=[];
