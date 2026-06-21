@@ -137,7 +137,7 @@ function buildLevel(){
   addSolid(x,GROUND_Y,14,3);
   x+=14;
 
-  while(x<LEVEL_W-22){
+ while(x < flag.x - 20){
     // 先做一段長地面：不再固定「一段地一個坑」
     const len=10+Math.floor(Math.random()*13); // 10~22格，會有長陸地
     addSolid(x,GROUND_Y,len,3);
@@ -166,7 +166,7 @@ function buildLevel(){
   }
 
   // 終點前補長地面，旗子站得住
-  addSolid(x,GROUND_Y,18,3);
+ addSolid(flag.x,GROUND_Y,18,3);
 }
 /* enemies (alcohol monsters) */
 let enemies=[];
