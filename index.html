@@ -361,6 +361,24 @@ function reset(full){
   if(full){score=0;lives=3;won=false;ended=false}
 }
 function respawn(){
+  // demo 展示模式:把 AI 放到前方下一塊地面的「左緣往內一點」,
+  // 並預先給它一段助跑速度,避免在同一個坑邊無限掉落
+  if(demo){
+    let next=null;
+    for(const s of solids){
+      if(s.y!==GROUND_Y*TILE)continue;
+      if(s.x > P.x+TILE*0.5){                 // 前方的下一塊主地面
+        if(!next || s.x<next.x) next=s;
+      }
+    }
+    if(next){
+      P.x=next.x+TILE*1.5;                     // 落在對岸,留點空間
+      P.y=next.y-P.h-30;
+      P.vx=MAXVX; P.vy=0; P.face=1;
+      P.dead=false; P.inv=60;
+      return;
+    }
+  }
   let best=null,bestDist=1e9;
   for(const s of solids){
     if(s.y!==GROUND_Y*TILE)continue;
@@ -386,35 +404,73 @@ function update(){
     keys['ArrowRight']=true; keys['ArrowLeft']=false;
     let wantJump=false;
 
-    // 1) 提早偵測坑:檢查前方 0.6~2 格範圍腳下是否還有地面
-    if(P.onGround){
-      let gapAhead=true;
-      for(let d=0.6; d<=2.2; d+=0.4){
+    // 找出「前方第一個地面缺口」的左緣 X(坑的起點)
+    function nextGapEdge(){
+      const footY=P.y+P.h+4;
+      let onSolidNow=false;
+      for(const s of solids){
+        if(P.x+P.w>s.x&&P.x+P.w<s.x+s.w&&footY>=s.y&&footY<s.y+s.h+6){onSolidNow=true;break}
+      }
+      if(!onSolidNow) return null;       // 已經在空中
+      for(let d=0.3; d<=4.0; d+=0.25){
         const probeX=P.x+P.w+d*TILE;
-        const footY=P.y+P.h+4;
+        let solid=false;
         for(const s of solids){
-          if(probeX>s.x&&probeX<s.x+s.w&&footY>=s.y&&footY<s.y+s.h+6){gapAhead=false;break}
+          if(probeX>s.x&&probeX<s.x+s.w&&footY>=s.y&&footY<s.y+s.h+6){solid=true;break}
         }
-        if(!gapAhead)break;
+        if(!solid) return P.x+P.w+d*TILE; // 缺口左緣大約位置
       }
-      if(gapAhead) wantJump=true;
+      return null;                        // 前方 4 格內都是實地
     }
 
-    // 2) 前方有酒精怪 → 跳上去踩它
-    for(const e of enemies){
-      if(!e.alive)continue;
-      const dx=e.x-(P.x+P.w);
-      if(dx>-6&&dx<TILE*2.2&&Math.abs(e.y-(P.y+P.h))<TILE*1.5){wantJump=true;break}
+    // 物理預測:用「現在起跳」會落在哪,判斷能否安全到達對岸
+    function simulateJump(){
+      let sx=P.x, sy=P.y, svx=P.vx, svy=-JUMP;
+      for(let i=0;i<70;i++){
+        svx+=MOVE; svx*=FRICTION;             // 空中持續按右,加速
+        if(svx>MAXVX)svx=MAXVX;
+        sx+=svx;
+        sy+=svy; svy+=GRAV; if(svy>16)svy=16;
+        // 下落階段檢查是否踩到某塊平台頂面
+        if(svy>0){
+          const fx=sx+P.w*0.5, fy=sy+P.h;
+          for(const s of solids){
+            if(fx>s.x&&fx<s.x+s.w&&fy>=s.y-2&&fy<s.y+s.h){
+              return {land:true, x:sx};       // 安全落地
+            }
+          }
+        }
+        if(sy>H+40) return {land:false, x:sx}; // 掉出畫面
+      }
+      return {land:false, x:sx};
     }
 
-    // 3) 前方有更高的平台/踏腳石擋路 → 跳上去
-    for(const s of solids){
-      const dx=s.x-(P.x+P.w);
-      if(dx>-6&&dx<TILE*1.6 && s.y<P.y+P.h-4 && s.y>P.y-TILE*3){
-        if(P.onGround){wantJump=true;break;}
+    let needJumpNow=false;
+
+    if(P.onGround){
+      const gapEdge=nextGapEdge();
+      if(gapEdge!==null){
+        const distToEdge=gapEdge-(P.x+P.w);
+        if(distToEdge<=TILE*1.2){            // 接近坑緣才考慮跳
+          const sim=simulateJump();
+          // 現在跳能安全落地 → 跳;不能 → 但快踩出邊緣了也只能跳(賭一把,別站著掉)
+          if(sim.land || distToEdge<=4) needJumpNow=true;
+        }
+      }
+      // 更高平台/踏腳石擋路 → 跳
+      for(const s of solids){
+        const dx=s.x-(P.x+P.w);
+        if(dx>-6&&dx<TILE*1.4 && s.y<P.y+P.h-4 && s.y>P.y-TILE*3){needJumpNow=true;break}
+      }
+      // 酒精怪 → 踩
+      for(const e of enemies){
+        if(!e.alive)continue;
+        const dx=e.x-(P.x+P.w);
+        if(dx>-6&&dx<TILE*2.0&&Math.abs(e.y-(P.y+P.h))<TILE*1.5){needJumpNow=true;break}
       }
     }
 
+    wantJump=needJumpNow;
     keys[' ']=wantJump;
   }
 
