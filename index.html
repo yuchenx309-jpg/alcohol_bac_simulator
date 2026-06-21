@@ -136,18 +136,19 @@ function buildLevel(){
   addSolid(x,GROUND_Y,12,3);
   x+=12;
 
-  while(x<LEVEL_W-14){
+  while(x<LEVEL_W-20){
 
-    const gap=2+Math.floor(Math.random()*3); // 2~4格安全洞
+    const gap=2+Math.floor(Math.random()*2); // ⭐ 改安全洞：2~3格（不會跳不過）
     x+=gap;
 
-    const len=6+Math.floor(Math.random()*7); // 6~12格地面
+    const len=8+Math.floor(Math.random()*8); // ⭐ 8~15格長地面（解決你說“太短”）
+
     addSolid(x,GROUND_Y,len,3);
 
     // 第一層平台
     if(Math.random()<0.6){
       const pw=2+Math.floor(Math.random()*2);
-      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
+      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw));
       const py=GROUND_Y-2;
 
       addSolid(pxs,py,pw,1);
@@ -161,7 +162,7 @@ function buildLevel(){
     x+=len;
   }
 
-  addSolid(x,GROUND_Y,14,3);
+  addSolid(x,GROUND_Y,16,3);
 }
 
 /* enemies (alcohol monsters) */
