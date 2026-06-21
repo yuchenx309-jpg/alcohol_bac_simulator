@@ -131,160 +131,81 @@ function addSolid(tx,ty,tw,th){solids.push({x:tx*TILE,y:ty*TILE,w:tw*TILE,h:th*T
 const GROUND_Y=9; // tile row where ground top sits (canvas 360/32 ≈ 11 rows)
 function buildLevel(){
   solids.length=0;
-
-  const flagTile=LEVEL_W-6;
-  const finalSafeStart=flagTile-30;
-
   let x=0;
-
-  // 起點
-  addSolid(x,GROUND_Y,14,3);
-  x+=14;
-
-  while(x<finalSafeStart){
-
-    const progress=x/finalSafeStart;
-
-    // 難度逐漸增加，但保證可跳
-    const gapChance=0.25 + progress*0.25;
-    const platformChance=0.55 + progress*0.25;
-
-    // 隨機坑（2~3格，保證可跳）
-    if(x>20 && Math.random()<gapChance){
-      x+=2+Math.floor(Math.random()*2);
+  // 起點先給一段安全地面
+  addSolid(x,GROUND_Y,12,3); x+=12;
+  while(x<LEVEL_W-14){
+    // 隨機坑寬：2 或 3 格（人能跳 5，留餘地）
+    const gap=2+Math.floor(Math.random()*2); // 2~3
+    // 坑太寬就放輔助跳台（這裡坑最多3格其實跳得過，但保留邏輯讓你之後想加寬也安全）
+    if(gap>=4){
+      const midX=x+Math.floor(gap/2);
+      addSolid(midX,GROUND_Y-3,2,1); // 坑中間的浮島
     }
-
-    const len=6+Math.floor(Math.random()*12);
-    const landEnd=Math.min(x+len,finalSafeStart);
-    const realLen=landEnd-x;
-
-    addSolid(x,GROUND_Y,realLen,3);
-
-    // 第一層平台
-    if(progress>0.1 && Math.random()<platformChance && realLen>6){
-      const pw=2+Math.floor(Math.random()*3);
-      const pxs=x+1+Math.floor(Math.random()*Math.max(1,realLen-pw-1));
-      addSolid(pxs,GROUND_Y-2,pw,1);
-
-      // 第二層（中後期更多）
-      if(progress>0.4 && Math.random()<0.5){
-        addSolid(pxs,GROUND_Y-4,2,1);
-
-        // 第三層極少量（後期）
-        if(progress>0.7 && Math.random()<0.25){
-          addSolid(pxs,GROUND_Y-6,2,1);
-        }
-      }
+    x+=gap;
+    // 隨機地面段長：6~12 格
+    const len=6+Math.floor(Math.random()*7);
+    addSolid(x,GROUND_Y,len,3);
+    // 這段地面上，隨機決定要不要放一個浮空平台
+    if(Math.random()<0.5){
+      const py=GROUND_Y-3-Math.floor(Math.random()*2); // 地面上2~3格高，跳得上
+      const pw=2+Math.floor(Math.random()*2);          // 寬2~3格
+      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
+      addSolid(pxs,py,pw,1);
     }
-
-    x=landEnd;
-
-    // 不規律連接（避免節奏死板）
-    if(x<finalSafeStart && Math.random()<0.5){
-      x+=2+Math.floor(Math.random()*2);
-    }
+    x+=len;
   }
-
-  // 終點安全區
-  addSolid(flagTile*TILE,GROUND_Y,18,3);
+  // 終點前補一段長地面，確保旗子站得住
+  addSolid(x,GROUND_Y,14,3);
 }
+
 
 /* enemies (alcohol monsters) */
 let enemies=[];
 function buildEnemies(){
   enemies=[];
-
-  for(const s of solids){
-
-    if(s.x < 18*TILE) continue;
-    if(s.x > flag.x - TILE*6) continue;
-
-    if(s.w < TILE*3) continue;
-
-    const row=s.y/TILE;
-    const isGround=row===GROUND_Y;
-    const isLayer1=row===GROUND_Y-2;
-    const isLayer2=row===GROUND_Y-4;
-    const isLayer3=row===GROUND_Y-6;
-
-    if(!isGround && !isLayer1 && !isLayer2 && !isLayer3) continue;
-
-    let chance=0.18;
-    if(isGround) chance=0.25;
-    if(isLayer1) chance=0.32;
-    if(isLayer2) chance=0.38;
-    if(isLayer3) chance=0.42;
-
-    const progress=s.x/(LEVEL_W*TILE);
-    chance += progress*0.1;
-
-    if(Math.random()>chance) continue;
-
-    const minX=s.x+6;
-    const maxX=s.x+s.w-26-6;
-    if(maxX<=minX) continue;
-
-    const ex=minX+Math.random()*(maxX-minX);
-    const ey=s.y-30;
-
-    enemies.push({
-      x:ex,
-      y:ey,
-      w:26,
-      h:30,
-      vx:(Math.random()<0.5?-1:1)*0.9,
-      alive:true,
-      t:0,
-      minX:minX,
-      maxX:maxX,
-      floorY:s.y
-    });
-
-    if(enemies.length>=28) break;
-  }
+  const spots=[24,34,46,52,63,72,78,88,98,108,118,130,142,152,162,172,184,196,206];
+  spots.forEach((tx,i)=>{
+    const ex=tx*TILE, ey=(GROUND_Y-1)*TILE;
+    // 檢查這隻怪腳下是不是有主地面，沒有就跳過（避免生在坑上）
+    const footY=ey+30;
+    let onGround=false;
+    for(const s of solids){
+      if(ex+13>s.x && ex+13<s.x+s.w && Math.abs(footY-s.y)<6){onGround=true;break}
+    }
+    if(onGround) enemies.push({x:ex,y:ey,w:26,h:30,vx:(i%2?-1:1)*0.9,alive:true,t:i*7});
+  });
 }
 
 /* medkits */
 let kits=[];
 function buildKits(){
   kits=[];
+  // 在隨機地面段裡，挑幾段放醫藥箱（站在地面上）
   let count=0;
-
   for(const s of solids){
-    if(s.x < 16*TILE) continue;
-    if(s.x+s.w > flag.x - TILE*8) continue;
-    if(s.w < TILE*4) continue;
-    if(Math.random()>0.20) continue;
-    if(count>=6) break;
-
-    const kw=24, kh=22;
-    const kx=s.x+TILE+Math.random()*Math.max(1,s.w-TILE*2-kw);
-    const ky=s.y-kh-2; // 永遠放在磚塊上方，不會塞進磚塊
-
-    kits.push({x:kx,y:ky,w:kw,h:kh,taken:false,t:count*11});
-    count++;
+    if(s.y!==GROUND_Y*TILE)continue;
+    if(Math.random()<0.35 && count<6){        // 約35%機率、最多6個
+      const kx=s.x+Math.floor(s.w/2)-12;       // 放在該段地面中間
+      kits.push({x:kx,y:(GROUND_Y-2)*TILE,w:24,h:22,taken:false,t:count*11});
+      count++;
+    }
   }
 }
+
 
 /* coins-ish amber tokens */
 let tokens=[];
 function buildTokens(){
   tokens=[];
-
+  // 沿著每一塊「主地面」上方撒金幣，飄在空中、不碰磚塊
   for(const s of solids){
-    if(s.x+s.w > flag.x - TILE*6) continue; // 終點安全區不放金幣
-    if(s.w < TILE*3) continue;
-
+    if(s.y!==GROUND_Y*TILE)continue;          // 只在主地面上方放
     const tilesWide=Math.floor(s.w/TILE);
-    for(let i=1;i<tilesWide-1;i+=2){
-      if(Math.random()<0.55) continue;
-
+    for(let i=1;i<tilesWide-1;i+=2){          // 每隔一格放一個，避免太密
+      if(Math.random()<0.5)continue;          // 一半機率跳過，分佈自然
       const tx=s.x+i*TILE+TILE/2;
-      if(tx > flag.x - TILE*6) continue;
-
-      // 跟著所在平台高度放，不會出現在磚塊裡
-      const ty=s.y-TILE*(1+Math.floor(Math.random()*2));
-
+      const ty=s.y-TILE*(1+Math.floor(Math.random()*2)); // 地面上方1~2格高的空中
       tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
     }
   }
@@ -436,18 +357,26 @@ function update(){
     if(!e.alive)continue;
     e.t++;
     e.x+=e.vx;
-    e.y=e.floorY-e.h; // 固定在自己出生的那一層平台上
-
-    // 只在自己的平台範圍內巡邏：坑和平台邊緣會擋住牠
-    if(e.x<e.minX){
-      e.x=e.minX;
-      e.vx=Math.abs(e.vx);
+    // turn at platform edges / walls
+    let grounded=false;
+    for(const s of solids){
+      // wall bump
+      if(e.x<s.x+s.w&&e.x+e.w>s.x&&e.y<s.y+s.h&&e.y+e.h>s.y){
+        if(e.vx>0)e.x=s.x-e.w; else e.x=s.x+s.w; e.vx*=-1;
+      }
     }
-    if(e.x>e.maxX){
-      e.x=e.maxX;
-      e.vx=-Math.abs(e.vx);
+    // keep on its ground row; flip at ledge
+    const aheadX=e.vx>0?e.x+e.w+2:e.x-2;
+    let support=false;
+    for(const s of solids){
+      if(aheadX>s.x&&aheadX<s.x+s.w&&Math.abs((e.y+e.h)-s.y)<6){support=true;break}
     }
- 
+    if(!support){
+      e.vx=-e.vx;                    // 轉頭
+      e.x+=e.vx>0?3:-3;              // 往新方向推離邊緣，避免來回卡死
+      if(Math.abs(e.vx)<0.6)e.vx=(e.vx>=0?1:-1)*0.9; // 速度太小就補回正常速度
+    }
+    e.y=(GROUND_Y-1)*TILE;
     // collision with player
     if(P.inv===0&&!P.dead&&rectHit(P,e)){
       const stomp = P.vy>0 && (P.y+P.h - e.y) < 18;
@@ -513,31 +442,26 @@ function drawBg(){
   g.addColorStop(0,COL.sky2);g.addColorStop(1,COL.sky1);
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   // parallax hills
-   const hillSizes=[120,90,105];
-const span=180;
-const start=Math.floor((cam*0.4)/span)-2;
+   const hillSizes=[120,90,105]; // 三種盆栽各自的顯示寬度，大小不一樣
+  for(let i=0;i<14;i++){
+         const offset=[0,-40,20,55,-25,35,-15][i%7];
+    const span=180;
+    const scroll=(cam*0.4)%(span*14);            // 用整排總寬度循環，避免硬跳
+    const hx=i*span - scroll - 90 + offset;
 
-for(let i=start;i<start+12;i++){
-  const m7=((i%7)+7)%7;
-  const m3=((i%3)+3)%3;
-
-  const offset=[0,-40,20,55,-25,35,-15][m7];
-  const hx=i*span - cam*0.4 - 90 + offset;
-
-  const idx=m3+1;
-  const hillSpr=SPR['hill_'+idx];
-
-  if(hillSpr){
-    const dispW=hillSizes[m3];
-    const dispH=dispW*(hillSpr.height/hillSpr.width);
-    ctx.save();
-    ctx.globalAlpha=0.82;
-    ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
-    ctx.restore();
-  } else {
-    drawHill(hx,GROUND_Y*TILE,120,70);
+    const idx=i%3+1;              // 改成 3 種輪流：1、2、3
+    const hillSpr=SPR['hill_'+idx];
+    if(hillSpr){
+      const dispW=hillSizes[i%3];                          // 三種各自的寬
+      const dispH=dispW*(hillSpr.height/hillSpr.width);   // 高度照原圖比例
+      ctx.save();
+      ctx.globalAlpha=0.82;                               // 透明度（0~1，0.82微透）
+      ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
+      ctx.restore();                                      // restore 讓透明度只影響盆栽
+    } else {
+      drawHill(hx,GROUND_Y*TILE,120,70);
+    }
   }
-}
 
   // clouds
   for(let i=0;i<8;i++){
