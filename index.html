@@ -131,55 +131,76 @@ function addSolid(tx,ty,tw,th){solids.push({x:tx*TILE,y:ty*TILE,w:tw*TILE,h:th*T
 const GROUND_Y=9; // tile row where ground top sits (canvas 360/32 ≈ 11 rows)
 function buildLevel(){
   solids.length=0;
+
+  const flagTile=LEVEL_W-6;        // 旗子的 tile 位置，注意：這是格子，不是像素
+  const finalSafeStart=flagTile-26; // 從這裡開始到終點都做安全地面，不再生坑/平台
+
   let x=0;
 
   // 起點安全地面
   addSolid(x,GROUND_Y,14,3);
   x+=14;
 
- while(x < flag.x - 20){
-    // 先做一段長地面：不再固定「一段地一個坑」
-    const len=10+Math.floor(Math.random()*13); // 10~22格，會有長陸地
-    addSolid(x,GROUND_Y,len,3);
+  while(x<finalSafeStart){
+    // 長陸地：不再「一段地、一個坑」那種機械節奏
+    const len=10+Math.floor(Math.random()*14); // 10~23格
+    const landEnd=Math.min(x+len,finalSafeStart);
+    const realLen=landEnd-x;
 
-    // 第一層平台：地面上方一層
-    if(Math.random()<0.72){
-      const pw=3+Math.floor(Math.random()*3); // 3~5格，站得住也能放怪
-      const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
+    addSolid(x,GROUND_Y,realLen,3);
+
+    // 只有離終點夠遠時才生上層平台，避免旗子旁邊出現兩層建築
+    if(x < flagTile-36 && realLen>=8 && Math.random()<0.72){
+      const pw=3+Math.floor(Math.random()*3); // 第一層平台：3~5格
+      const pxs=x+1+Math.floor(Math.random()*Math.max(1,realLen-pw-1));
       addSolid(pxs,GROUND_Y-2,pw,1);
 
-      // 第二層平台：在第一層上方，保留三層結構
-      if(Math.random()<0.48){
+      // 第二層平台：在第一層上方，恢復三層結構
+      if(Math.random()<0.45){
         const pw2=2+Math.floor(Math.random()*2); // 2~3格
-        const pxs2=Math.min(x+len-pw2-1,Math.max(x+1,pxs+1));
+        const pxs2=Math.min(x+realLen-pw2-1,Math.max(x+1,pxs+1));
         addSolid(pxs2,GROUND_Y-4,pw2,1);
       }
     }
 
-    x+=len;
+    x=landEnd;
 
-    // 坑不是每次都有：有時候直接接下一段長地面
-    if(Math.random()<0.55){
-      const gap=2+Math.floor(Math.random()*2); // 只做2~3格，避免4格跳不過
+    // 坑不是每次都有；有時候下一段地面會直接接上，形成長陸地
+    if(x<finalSafeStart && Math.random()<0.45){
+      const gap=2+Math.floor(Math.random()*2); // 2~3格，避免4格跳不過
       x+=gap;
     }
   }
 
-  // 終點前補長地面，旗子站得住
- addSolid(flag.x,GROUND_Y,18,3);
+  // 終點安全跑道：旗子前後都是平地，沒有坑、沒有上層平台
+  addSolid(finalSafeStart,GROUND_Y,(flagTile+12)-finalSafeStart,3);
 }
+
 /* enemies (alcohol monsters) */
 let enemies=[];
 function buildEnemies(){
   enemies=[];
 
   for(const s of solids){
-    if(s.x < 18*TILE) continue;              // 起點附近不要放
-    if(s.x > flag.x - TILE*6) continue;      // 終點附近不要放
-    if(s.w < TILE*3) continue;               // 太短的平台不要放
-    if(Math.random() > 0.30) continue;       // 每一層都有機率生怪
+    if(s.x < 18*TILE) continue;                 // 起點附近不要放
+    if(s.x+s.w > flag.x - TILE*8) continue;     // 終點安全區不要放
+    if(s.w < TILE*3) continue;                  // 太短的平台不要放
 
-    const ex=s.x+TILE+Math.random()*Math.max(1,s.w-TILE*3);
+    const row=s.y/TILE;
+    const isGround=row===GROUND_Y;
+    const isLayer1=row===GROUND_Y-2;
+    const isLayer2=row===GROUND_Y-4;
+    if(!isGround && !isLayer1 && !isLayer2) continue;
+
+    // 每一層都有可能有怪，但不要太多
+    const chance=isGround?0.22:(isLayer1?0.30:0.34);
+    if(Math.random()>chance) continue;
+
+    const minX=s.x+6;
+    const maxX=s.x+s.w-26-6;
+    if(maxX<=minX) continue;
+
+    const ex=minX+Math.random()*(maxX-minX);
     const ey=s.y-30;
 
     enemies.push({
@@ -190,46 +211,57 @@ function buildEnemies(){
       vx:(enemies.length%2?-1:1)*0.9,
       alive:true,
       t:enemies.length*7,
-      minX:s.x+4,                  // 只能在出生的那一塊平台內走
-      maxX:s.x+s.w-26-4,           // 到邊緣就回頭，不會跨坑
+      minX:minX,            // 只能在出生平台內走
+      maxX:maxX,            // 到平台邊緣/坑前就回頭
       floorY:s.y
     });
 
     if(enemies.length>=20) break;
   }
 }
+
 /* medkits */
 let kits=[];
 function buildKits(){
   kits=[];
-  // 在隨機地面段裡，挑幾段放醫藥箱（站在地面上）
   let count=0;
+
   for(const s of solids){
-    if(s.y!==GROUND_Y*TILE)continue;
-    if(Math.random()<0.35 && count<6){        // 約35%機率、最多6個
-      const kx=s.x+Math.floor(s.w/2)-12;       // 放在該段地面中間
-      kits.push({x:kx,y:(GROUND_Y-2)*TILE,w:24,h:22,taken:false,t:count*11});
-      count++;
-    }
+    if(s.x < 16*TILE) continue;
+    if(s.x+s.w > flag.x - TILE*8) continue;
+    if(s.w < TILE*4) continue;
+    if(Math.random()>0.20) continue;
+    if(count>=6) break;
+
+    const kw=24, kh=22;
+    const kx=s.x+TILE+Math.random()*Math.max(1,s.w-TILE*2-kw);
+    const ky=s.y-kh-2; // 永遠放在磚塊上方，不會塞進磚塊
+
+    kits.push({x:kx,y:ky,w:kw,h:kh,taken:false,t:count*11});
+    count++;
   }
 }
-
 
 /* coins-ish amber tokens */
 let tokens=[];
 function buildTokens(){
   tokens=[];
-  // 沿著每一塊「主地面」上方撒金幣，飄在空中、不碰磚塊
+
   for(const s of solids){
-   if(s.y!==GROUND_Y*TILE || s.x > flag.x - TILE*4)continue;        // 只在主地面上方放
+    if(s.x+s.w > flag.x - TILE*6) continue; // 終點安全區不放金幣
+    if(s.w < TILE*3) continue;
+
     const tilesWide=Math.floor(s.w/TILE);
-    for(let i=1;i<tilesWide-1;i+=2){          // 每隔一格放一個，避免太密
-      if(Math.random()<0.5)continue;          // 一半機率跳過，分佈自然
+    for(let i=1;i<tilesWide-1;i+=2){
+      if(Math.random()<0.55) continue;
+
       const tx=s.x+i*TILE+TILE/2;
-      const ty=s.y-TILE*(1+Math.floor(Math.random()*2)); // 地面上方1~2格高的空中
-     if(tx < flag.x - TILE*3){
-  tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
-}
+      if(tx > flag.x - TILE*6) continue;
+
+      // 跟著所在平台高度放，不會出現在磚塊裡
+      const ty=s.y-TILE*(1+Math.floor(Math.random()*2));
+
+      tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
     }
   }
 }
