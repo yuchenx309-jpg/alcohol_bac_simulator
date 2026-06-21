@@ -2,564 +2,717 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>血液酒精濃度｜互動模擬</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>清醒大冒險｜躲酒精小遊戲</title>
 <style>
 :root{
-  --bg:#140f0a;--bg2:#1d150c;
-  --cream:#f6ecd8;--cream2:#e9dcc2;--muted:#bda988;--faint:#8a795e;
-  --line:rgba(246,236,216,.14);--card:rgba(246,236,216,.045);
-  --amber:#f0b54a;--amber2:#d4892a;--gold:#f7c95e;
-  --red:#e24a3a;--red2:#b8311f;
-  --green:#7ac77a;
-  --serif:"Playfair Display","Noto Serif TC",Georgia,"Songti TC",serif;
+  --bg:#140f0a;--bg2:#1d150c;--cream:#f6ecd8;--muted:#bda988;--faint:#8a795e;
+  --amber:#f0b54a;--amber2:#d4892a;--gold:#0600bb;--red:#e24a3a;--green:#7ac77a;
+  --serif:"Playfair Display","Noto Serif TC",Georgia,serif;
   --han:"Noto Serif TC","Songti TC",serif;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{
-  margin:0;color:var(--cream);font-family:var(--han);
-  background:
-    radial-gradient(1100px 680px at 82% -10%,rgba(240,181,74,.10),transparent 60%),
-    radial-gradient(900px 600px at 8% 112%,rgba(226,74,58,.08),transparent 55%),
-    linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
-  min-height:100dvh;overflow-x:hidden;
-}
-
-/* ===== gooey drip at top ===== */
-.drip-layer{position:fixed;top:0;left:0;right:0;height:160px;z-index:5;pointer-events:none;filter:url(#goo)}
-.drip-bar{position:absolute;top:0;left:0;right:0;height:46px;background:linear-gradient(180deg,var(--amber),var(--amber2))}
-.drip{position:absolute;top:30px;width:34px;height:34px;border-radius:50%;background:var(--amber2)}
-.drop{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--amber2);top:46px}
-.drip-sheen{position:fixed;top:0;left:0;right:0;height:8px;z-index:6;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.45),transparent)}
-
-/* viscous oozing drips */
-@keyframes ooze{
-  0%,100%{transform:translateY(0) scaleY(1)}
-  50%{transform:translateY(46px) scaleY(1.5)}
-}
-@keyframes fall{
-  0%{transform:translateY(0) scaleY(.6);opacity:0}
-  12%{opacity:1;transform:translateY(0) scaleY(1.4)}
-  100%{transform:translateY(150px) scaleY(1);opacity:0}
-}
-
-.stage{position:relative;z-index:2;width:min(680px,92vw);margin:auto;padding:88px 0 48px;display:flex;flex-direction:column;min-height:100dvh}
-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px}
-.brand{font-family:var(--serif);font-weight:700;font-size:19px;letter-spacing:.01em}
-.brand i{font-style:italic;color:var(--amber)}
-.privacy{font-size:12px;color:var(--faint)}
-
-/* progress */
-.progress{display:flex;gap:7px;margin:20px 0 6px;opacity:1;transition:.4s}
-.progress.hide{opacity:0;height:0;margin:0;overflow:hidden}
-.progress span{height:4px;flex:1;border-radius:99px;background:rgba(246,236,216,.10);overflow:hidden;position:relative}
-.progress span::after{content:"";position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--amber),var(--gold));transition:width .55s cubic-bezier(.65,0,.35,1)}
-.progress span.done::after,.progress span.active::after{width:100%}
-
-.panel{flex:1;display:flex;flex-direction:column;justify-content:center}
-
-/* ===== intro ===== */
-#intro{display:flex;flex-direction:column;align-items:center;text-align:center;animation:rise .7s cubic-bezier(.2,.8,.2,1)}
-.glass-hero{width:200px;height:240px;margin:6px 0 4px;filter:drop-shadow(0 24px 40px rgba(212,137,42,.28))}
-.kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--amber);font-weight:700;margin:14px 0 6px}
-.title{font-family:var(--serif);font-weight:900;font-size:clamp(34px,8vw,58px);line-height:1.04;letter-spacing:-.01em;margin:0 0 14px}
+body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--cream);
+  font-family:var(--han);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:100dvh;padding:14px;overflow:hidden;touch-action:none}
+.title{font-family:var(--serif);font-weight:900;font-size:clamp(20px,4.5vw,30px);letter-spacing:.01em;margin:0 0 10px;text-align:center}
 .title em{font-style:italic;color:var(--amber)}
-.lede{color:var(--muted);font-size:15px;line-height:1.7;max-width:40ch;margin:0 auto 30px}
+.frame{position:relative;width:min(960px,96vw);aspect-ratio:16/9;border-radius:14px;overflow:hidden;
+  border:3px solid var(--amber);box-shadow:0 22px 60px rgba(0,0,0,.5),0 0 0 1px rgba(240,181,74,.3)}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated;background:#48a7ff}
 
-/* steps */
-.step{display:none;animation:rise .6s cubic-bezier(.2,.8,.2,1)}
-.step.show{display:block}
-@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
-.eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:14px}
-.eyebrow b{color:var(--faint);font-weight:700}
-.q{font-family:var(--serif);font-size:clamp(28px,5.6vw,42px);font-weight:700;letter-spacing:-.01em;line-height:1.14;margin:0 0 12px;color:var(--cream)}
-.hint{color:var(--muted);font-size:15px;line-height:1.7;margin:0 0 28px;max-width:44ch}
+/* overlays */
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;background:rgba(20,15,10,.86);backdrop-filter:blur(3px);padding:22px;z-index:5}
+.overlay.hide{display:none}
+.overlay h2{font-family:var(--serif);font-size:clamp(26px,6vw,46px);margin:0 0 10px;font-weight:900}
+.overlay h2.win{color:var(--green)}.overlay h2.lose{color:var(--red)}
+.overlay p{color:var(--muted);max-width:42ch;line-height:1.7;margin:0 0 8px;font-size:15px}
+.keys{color:var(--faint);font-size:13px;margin:14px 0 22px;line-height:1.9}
+.keys b{color:var(--cream)}
+.btn{border:0;border-radius:13px;padding:15px 38px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;
+  background:linear-gradient(100deg,var(--amber),var(--amber2));color:#2a1c08;box-shadow:0 12px 30px rgba(240,181,74,.3);transition:.2s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+a.btn{display:inline-block;text-decoration:none;text-align:center}
+.btn.ghost{background:rgba(246,236,216,.08);color:var(--muted);box-shadow:none}
+.btn.ghost:hover{background:rgba(226,74,58,.14);color:#fff}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.score-final{font-family:var(--serif);font-size:34px;color:var(--gold);margin:6px 0 4px}
 
-/* options */
-.opts{display:grid;gap:11px}
-.opts.cols2{grid-template-columns:1fr 1fr}
-.opt{
-  text-align:left;border:1px solid var(--line);background:var(--card);color:var(--cream);
-  border-radius:16px;padding:17px 18px;cursor:pointer;font:inherit;font-weight:600;
-  display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;
-  transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .4s,background .4s,box-shadow .4s,color .4s;
-}
-.opt::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(226,74,58,.16),rgba(226,74,58,.06));opacity:0;transition:opacity .45s cubic-bezier(.4,0,.2,1)}
-.opt>*{position:relative;z-index:1}
-.opt.hot{transform:translateY(-3px);border-color:var(--red);color:#fff;box-shadow:0 14px 34px rgba(226,74,58,.22)}
-.opt.hot::before{opacity:1}
-.opt.hot .ico{color:var(--red);transform:scale(1.12) rotate(-4deg)}
-.opt.sel{border-color:var(--amber);background:rgba(240,181,74,.12);box-shadow:0 0 0 1px var(--amber) inset,0 14px 30px rgba(240,181,74,.16)}
-.opt.sel.hot{border-color:var(--amber)}
-.opt .ico{font-size:23px;width:32px;text-align:center;flex:none;transition:transform .4s cubic-bezier(.34,1.56,.64,1),color .4s}
-.opt .t{display:block;font-size:16px;font-weight:700}
-.opt .d{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-top:3px}
-.opt.sel .d{color:#e9c87f}
-
-/* slider / number */
-.bignum{font-family:var(--serif);font-size:clamp(50px,12vw,84px);font-weight:900;letter-spacing:-.02em;line-height:1;color:var(--amber)}
-.bignum small{font-family:var(--han);font-size:18px;color:var(--muted);font-weight:600;margin-left:7px}
-input[type=range]{width:100%;margin:24px 0 6px;height:6px;accent-color:var(--amber)}
-.scaleEnds{display:flex;justify-content:space-between;color:var(--faint);font-size:12px}
-.numwrap{display:flex;align-items:center;gap:12px}
-.numwrap input{flex:1;padding:15px 17px;border:1px solid var(--line);border-radius:13px;background:var(--card);color:var(--cream);font:inherit;font-size:18px;font-weight:700}
-.numwrap input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(240,181,74,.18)}
-.unitlbl{color:var(--muted);font-weight:700;font-size:14px}
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.fieldlbl{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-bottom:8px}
-
-/* nav */
-.nav{display:flex;align-items:center;gap:12px;margin-top:34px}
-.btn{border:0;border-radius:14px;padding:15px 24px;font:inherit;font-weight:700;cursor:pointer;transition:transform .3s,filter .3s,background .3s,color .3s}
-.btn.next{background:linear-gradient(100deg,var(--amber),var(--amber2));color:#2a1c08;flex:1;box-shadow:0 12px 30px rgba(240,181,74,.26)}
-.btn.next:hover{transform:translateY(-2px);filter:brightness(1.07)}
-.btn.next:disabled{opacity:.38;cursor:not-allowed;transform:none;filter:none}
-.btn.back{background:rgba(246,236,216,.07);color:var(--muted)}
-.btn.back:hover{background:rgba(226,74,58,.14);color:#fff}
-.btn.start{background:linear-gradient(100deg,var(--amber),var(--amber2));color:#2a1c08;padding:16px 40px;font-size:16px;box-shadow:0 14px 34px rgba(240,181,74,.3)}
-.btn.start:hover{transform:translateY(-2px);filter:brightness(1.07)}
-
-/* ===== result ===== */
-#result{display:none;animation:rise .7s cubic-bezier(.2,.8,.2,1)}
-.r-top{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
-.r-glass{width:120px;height:170px;flex:none;filter:drop-shadow(0 18px 30px rgba(0,0,0,.4))}
-.r-headtext{flex:1;min-width:200px}
-.r-label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);font-weight:700}
-.r-peak{font-family:var(--serif);font-size:clamp(56px,15vw,96px);font-weight:900;letter-spacing:-.03em;line-height:.95;margin:6px 0 8px}
-.r-peak.lvl-low{color:var(--green)}.r-peak.lvl-mid{color:var(--gold)}.r-peak.lvl-high{color:var(--red)}
-.pill{display:inline-flex;align-items:center;gap:8px;font-weight:700;border-radius:999px;padding:8px 16px;font-size:14px}
-.pill::before{content:"";width:8px;height:8px;border-radius:99px;background:currentColor;box-shadow:0 0 10px currentColor}
-.pill.lvl-low{background:rgba(122,199,122,.15);color:var(--green)}
-.pill.lvl-mid{background:rgba(247,201,94,.15);color:var(--gold)}
-.pill.lvl-high{background:rgba(226,74,58,.16);color:var(--red)}
-
-.canvas-card{margin:24px 0 4px;border:1px solid var(--line);border-radius:18px;background:rgba(246,236,216,.025);padding:16px 14px 8px}
-.ctitle{font-size:12.5px;color:var(--muted);font-weight:700;padding:2px 6px 8px}
-canvas#curve{width:100%;height:230px;display:block}
-
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:18px}
-.stat{border:1px solid var(--line);border-radius:15px;padding:15px 14px;background:var(--card)}
-.stat span{color:var(--muted);font-size:12px;font-weight:600}
-.stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:700;margin-top:5px}
-
-.meters{margin-top:18px;display:grid;gap:16px}
-.m-head{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:9px}
-.m-head small{color:var(--muted);font-weight:700}
-.meter{height:9px;background:rgba(246,236,216,.08);border-radius:99px;overflow:hidden}
-.meter>i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--gold),var(--red));transition:width 1.2s cubic-bezier(.65,0,.35,1)}
-
-.note{margin-top:20px;padding:16px 18px;border-radius:15px;background:rgba(246,236,216,.03);border:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.7}
-.note b{color:var(--cream)}
-.r-nav{display:flex;gap:12px;margin-top:22px}
-
-@media(max-width:520px){
-  .opts.cols2{grid-template-columns:1fr}
-  .stats{grid-template-columns:1fr}
-  .stat{display:flex;justify-content:space-between;align-items:center}
-  .stat b{margin-top:0}
-  .r-top{justify-content:center;text-align:center}
-}
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+/* touch controls */
+.touch{display:none;pointer-events:none;width:min(960px,96vw);margin-top:10px;z-index:4}
+.touch.on{display:flex;justify-content:space-between;align-items:center}
+.tbtn{width:64px;height:64px;border-radius:50%;
+  background:rgba(246,236,216,.14);border:2px solid rgba(246,236,216,.3);
+  display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--cream);
+  pointer-events:auto;user-select:none;backdrop-filter:blur(2px)}
+.tbtn:active{background:rgba(226,74,58,.4)}
+#tLeft{margin-left:18px}
+#tRight{margin-right:auto;margin-left:12px}
+#tJump{margin-right:18px;width:78px;height:78px;background:rgba(240,181,74,.25)}
+.hintbar{margin-top:12px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.6}
 </style>
 </head>
 <body>
+<h1 class="title">清醒大冒險 <em>· 躲酒精</em></h1>
+<div class="frame">
+  <canvas id="game" width="640" height="360"></canvas>
 
-<!-- gooey drip filter -->
-<svg width="0" height="0" style="position:absolute"><defs>
-  <filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/>
-  <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="g"/>
-  <feBlend in="SourceGraphic" in2="g"/></filter>
-</defs></svg>
-
-<div class="drip-layer" id="dripLayer"><div class="drip-bar"></div></div>
-<div class="drip-sheen"></div>
-
-<div class="stage">
-  <header>
-    <div class="brand">Alcohol <i>&amp; You</i></div>
-    <div class="privacy">匿名估算 · 不收集個資</div>
-  </header>
-
-  <div class="progress hide" id="prog"></div>
-
-  <div class="panel">
-    <!-- INTRO -->
-    <div id="intro">
-      <svg class="glass-hero" viewBox="0 0 200 240" aria-hidden="true">
-        <defs>
-          <clipPath id="gClip"><path d="M50 44 L150 44 L142 206 Q142 222 126 222 L74 222 Q58 222 58 206 Z"/></clipPath>
-          <linearGradient id="liqG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#f7c95e"/><stop offset="1" stop-color="#cf7e22"/>
-          </linearGradient>
-        </defs>
-        <g clip-path="url(#gClip)">
-          <g class="hLiquid">
-            <rect x="40" y="96" width="120" height="160" fill="url(#liqG)"/>
-            <path class="wave" d="M40 100 q15 -10 30 0 t30 0 t30 0 t30 0 t30 0 v160 h-180 Z" fill="#f7c95e" opacity=".55"/>
-            <circle class="bub" cx="78" cy="200" r="4"/>
-            <circle class="bub" cx="110" cy="200" r="3"/>
-            <circle class="bub" cx="92" cy="200" r="2.5"/>
-            <circle class="bub" cx="124" cy="200" r="3.5"/>
-          </g>
-        </g>
-        <path d="M50 44 L150 44 L142 206 Q142 222 126 222 L74 222 Q58 222 58 206 Z" fill="none" stroke="rgba(246,236,216,.55)" stroke-width="3.5" stroke-linejoin="round"/>
-        <line x1="44" y1="44" x2="156" y2="44" stroke="rgba(246,236,216,.7)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M64 56 L60 200" stroke="rgba(255,255,255,.28)" stroke-width="5" stroke-linecap="round"/>
-      </svg>
-      <div class="kicker">互動式酒精風險模擬</div>
-      <h1 class="title">這杯下肚,<br>身體會<em>怎麼樣</em>?</h1>
-      <p class="lede">回答七個問題,我們會即時估算酒精在你血液中的動態濃度曲線。全程匿名,純為衛教用途。</p>
-      <button class="btn start" id="begin">開始模擬</button>
+  <div class="overlay" id="startScr">
+    <h2>清醒<span style="color:var(--amber)">大冒險</span></h2>
+    <p>酒精怪擋在回家的路上。跳過它們、或從上面踩扁它們,撿醫藥箱補命,平安抵達終點旗!小心多層平台上也藏著酒精怪。</p>
+    <div class="keys">
+      電腦:<b>← →</b> 移動　<b>空白鍵 / ↑</b> 跳<br>
+      手機:畫面下方按鈕操作<br>
+      ❤ 三條命 · 踩酒精怪 +100 · 醫藥箱回血
     </div>
+    <button class="btn" id="startBtn">開始遊戲</button>
+    <p style="margin-top:14px"><a href="alcohol_bac_simulator.html" style="color:var(--amber);font-size:13px">略過遊戲,直接填問卷 →</a></p>
+  </div>
 
-    <!-- STEP 0 weight -->
-    <div class="step" data-step="0">
-      <div class="eyebrow">第 1 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">你的體重大約是?</h2>
-      <p class="hint">體重影響酒精在體內的分佈,是估算血中濃度最重要的變數之一。</p>
-      <div class="bignum"><span id="weightOut">60</span><small>公斤</small></div>
-      <input id="weight" type="range" min="40" max="120" value="60">
-      <div class="scaleEnds"><span>40 kg</span><span>120 kg</span></div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next>下一步</button></div>
-    </div>
-
-    <!-- STEP 1 sex -->
-    <div class="step" data-step="1">
-      <div class="eyebrow">第 2 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">生理性別?</h2>
-      <p class="hint">不同生理性別的體液比例不同,僅用於模型估算。</p>
-      <div class="opts" data-name="sex">
-        <button class="opt" data-value="female"><span class="ico">♀</span><span><span class="t">女性</span><span class="d">體液分佈係數 ≈ 0.55</span></span></button>
-        <button class="opt" data-value="male"><span class="ico">♂</span><span><span class="t">男性</span><span class="d">體液分佈係數 ≈ 0.68</span></span></button>
-        <button class="opt" data-value="unspecified"><span class="ico">○</span><span><span class="t">不填／其他</span><span class="d">採用中間值 0.615</span></span></button>
-      </div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next disabled>下一步</button></div>
-    </div>
-
-    <!-- STEP 2 drink -->
-    <div class="step" data-step="2">
-      <div class="eyebrow">第 3 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">你喝的是什麼?</h2>
-      <p class="hint">選一種飲品,我們會帶入常見容量與酒精濃度,之後仍可調整。</p>
-      <div class="opts cols2" data-name="drink">
-        <button class="opt" data-value="beer"><span class="ico">🍺</span><span><span class="t">啤酒</span><span class="d">330 mL · 5%</span></span></button>
-        <button class="opt" data-value="wine"><span class="ico">🍷</span><span><span class="t">葡萄酒</span><span class="d">150 mL · 12%</span></span></button>
-        <button class="opt" data-value="cocktail"><span class="ico">🍹</span><span><span class="t">調酒</span><span class="d">180 mL · 15%</span></span></button>
-        <button class="opt" data-value="spirits"><span class="ico">🥃</span><span><span class="t">烈酒</span><span class="d">45 mL · 40%</span></span></button>
-      </div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next disabled>下一步</button></div>
-    </div>
-
-    <!-- STEP 3 amounts -->
-    <div class="step" data-step="3">
-      <div class="eyebrow">第 4 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">喝了多少?</h2>
-      <p class="hint">確認每杯容量、酒精濃度,以及大約喝了幾杯。</p>
-      <div class="duo">
-        <div><label class="fieldlbl">每杯容量(mL)</label><div class="numwrap"><input id="volume" type="number" min="10" max="1500" value="330"></div></div>
-        <div><label class="fieldlbl">酒精濃度(ABV %)</label><div class="numwrap"><input id="abv" type="number" min="0" max="80" step="0.1" value="5"></div></div>
-      </div>
-      <div style="margin-top:16px"><label class="fieldlbl">杯數</label><div class="numwrap"><input id="count" type="number" min="0.25" max="12" step="0.25" value="2"><span class="unitlbl">杯</span></div></div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next>下一步</button></div>
-    </div>
-
-    <!-- STEP 4 duration -->
-    <div class="step" data-step="4">
-      <div class="eyebrow">第 5 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">喝酒的持續時間?</h2>
-      <p class="hint">時間拉長,身體有更多時間代謝,峰值濃度通常較低。</p>
-      <div class="bignum"><span id="durationOut">2.0</span><small>小時</small></div>
-      <input id="duration" type="range" min="0.25" max="8" step="0.25" value="2">
-      <div class="scaleEnds"><span>15 分鐘</span><span>8 小時</span></div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next>下一步</button></div>
-    </div>
-
-    <!-- STEP 5 food -->
-    <div class="step" data-step="5">
-      <div class="eyebrow">第 6 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">喝的時候胃裡有食物嗎?</h2>
-      <p class="hint">食物會減緩酒精吸收,空腹時血中濃度可能上升得更快。</p>
-      <div class="opts" data-name="food">
-        <button class="opt" data-value="meal"><span class="ico">🍱</span><span><span class="t">飯後</span><span class="d">吸收較慢</span></span></button>
-        <button class="opt" data-value="light"><span class="ico">🥨</span><span><span class="t">少量食物</span><span class="d">吸收中等</span></span></button>
-        <button class="opt" data-value="empty"><span class="ico">🥛</span><span><span class="t">空腹</span><span class="d">吸收較快</span></span></button>
-      </div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" data-next disabled>下一步</button></div>
-    </div>
-
-    <!-- STEP 6 flush + med -->
-    <div class="step" data-step="6">
-      <div class="eyebrow">第 7 步 <b>/ 共 7 步</b></div>
-      <h2 class="q">最後兩個體質問題</h2>
-      <p class="hint">這些影響乙醛反應與代謝負擔指標,但不能單靠症狀判定基因型。</p>
-      <label class="fieldlbl" style="font-size:14px;margin:6px 0 10px">喝酒後容易臉紅嗎?</label>
-      <div class="opts cols2" data-name="flush">
-        <button class="opt" data-value="no"><span class="ico">🙂</span><span class="t">不容易</span></button>
-        <button class="opt" data-value="sometimes"><span class="ico">😅</span><span class="t">有時</span></button>
-        <button class="opt" data-value="yes"><span class="ico">😳</span><span class="t">很容易</span></button>
-      </div>
-      <label class="fieldlbl" style="font-size:14px;margin:22px 0 10px">有正在服用、可能與酒精交互作用的藥物嗎?</label>
-      <div class="opts cols2" data-name="med">
-        <button class="opt" data-value="no"><span class="ico">✓</span><span class="t">沒有／不確定</span></button>
-        <button class="opt" data-value="yes"><span class="ico">⚠</span><span class="t">有</span></button>
-      </div>
-      <div class="nav"><button class="btn back" data-back>返回</button><button class="btn next" id="finish" data-next disabled>產生我的結果</button></div>
-    </div>
-
-    <!-- RESULT -->
-    <div id="result">
-      <div class="r-top">
-        <svg class="r-glass" viewBox="0 0 200 240" aria-hidden="true">
-          <defs>
-            <clipPath id="rClip"><path d="M50 44 L150 44 L142 206 Q142 222 126 222 L74 222 Q58 222 58 206 Z"/></clipPath>
-            <linearGradient id="rLiqG" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" id="rLiqTop" stop-color="#f7c95e"/><stop offset="1" id="rLiqBot" stop-color="#cf7e22"/>
-            </linearGradient>
-          </defs>
-          <g clip-path="url(#rClip)">
-            <g id="rLiquid" style="transform:translateY(160px);transition:transform 1.3s cubic-bezier(.65,0,.35,1)">
-              <rect x="40" y="40" width="120" height="200" fill="url(#rLiqG)"/>
-              <path class="wave" d="M40 44 q15 -9 30 0 t30 0 t30 0 t30 0 t30 0 v200 h-180 Z" fill="#f7c95e" opacity=".5"/>
-              <circle class="bub" cx="80" cy="200" r="3.5"/>
-              <circle class="bub" cx="112" cy="200" r="3"/>
-            </g>
-          </g>
-          <path d="M50 44 L150 44 L142 206 Q142 222 126 222 L74 222 Q58 222 58 206 Z" fill="none" stroke="rgba(246,236,216,.5)" stroke-width="3.5" stroke-linejoin="round"/>
-          <line x1="44" y1="44" x2="156" y2="44" stroke="rgba(246,236,216,.65)" stroke-width="4" stroke-linecap="round"/>
-        </svg>
-        <div class="r-headtext">
-          <div class="r-label">你的估算峰值血液酒精濃度</div>
-          <div class="r-peak lvl-low" id="peak">0.000%</div>
-          <div class="pill lvl-low" id="riskPill">較低風險</div>
-        </div>
-      </div>
-
-      <div class="canvas-card">
-        <div class="ctitle">血中酒精濃度隨時間變化(估算曲線)</div>
-        <canvas id="curve" width="760" height="260"></canvas>
-      </div>
-
-      <div class="stats">
-        <div class="stat"><span>攝入純酒精</span><b id="grams">0 g</b></div>
-        <div class="stat"><span>估算接近清除</span><b id="clearTime">0 h</b></div>
-        <div class="stat"><span>標準杯數</span><b id="stdDrinks">0</b></div>
-      </div>
-
-      <div class="meters">
-        <div><div class="m-head"><span>乙醛反應傾向</span><small id="acetText">—</small></div><div class="meter"><i id="acetMeter"></i></div></div>
-        <div><div class="m-head"><span>代謝負擔指標</span><small id="metText">—</small></div><div class="meter"><i id="metMeter"></i></div></div>
-      </div>
-
-      <div class="note" id="explain"></div>
-      <div class="r-nav"><button class="btn back" id="reset">重新模擬</button></div>
+  <div class="overlay hide" id="endScr">
+    <h2 id="endTitle"></h2>
+    <div class="score-final" id="endScore"></div>
+    <p id="endMsg"></p>
+    <div class="btnrow">
+      <a class="btn" id="toSurveyBtn" href="alcohol_bac_simulator.html">前往問卷 →</a>
+      <button class="btn ghost" id="againBtn">再玩一次</button>
     </div>
   </div>
-</div>
 
-<style>
-.wave{animation:waveX 3.4s linear infinite}
-@keyframes waveX{from{transform:translateX(0)}to{transform:translateX(-60px)}}
-.bub{fill:rgba(255,255,255,.5);animation:rise2 2.6s ease-in infinite}
-.bub:nth-child(4){animation-duration:3.1s;animation-delay:.5s}
-.bub:nth-child(5){animation-duration:2.2s;animation-delay:1s}
-.bub:nth-child(6){animation-duration:2.9s;animation-delay:1.6s}
-@keyframes rise2{0%{transform:translateY(0);opacity:0}20%{opacity:.7}100%{transform:translateY(-110px);opacity:0}}
-.hLiquid{animation:fillUp 1.4s cubic-bezier(.65,0,.35,1) both}
-@keyframes fillUp{from{transform:translateY(150px)}to{transform:translateY(0)}}
-</style>
+
+</div>
+   <!-- touch controls -->
+  <div class="touch" id="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tJump">⤒</div>
+  </div>
+
+<div class="hintbar">推廣理性飲酒觀念，建立健康生活文化</div>
 
 <script>
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const STEPS=7;
-const state={sex:null,drink:null,food:null,flush:null,med:null};
-const presets={beer:[330,5],wine:[150,12],cocktail:[180,15],spirits:[45,40]};
-let cur=-1; // -1 = intro
-
-/* ---- build gooey drips ---- */
-(function(){
-  const layer=$('#dripLayer');
-  const xs=[8,20,33,47,58,70,82,93];
-  xs.forEach((x,i)=>{
-    const d=document.createElement('div');d.className='drip';
-    d.style.left=x+'%';
-    d.style.animation=`ooze ${3+ (i%4)*0.8}s ease-in-out ${i*0.4}s infinite`;
-    layer.appendChild(d);
-  });
-  // falling droplets
-  [15,40,62,85].forEach((x,i)=>{
-    const dp=document.createElement('div');dp.className='drop';
-    dp.style.left=x+'%';
-    dp.style.animation=`fall ${2.4+i*0.5}s ease-in ${i*0.9+1}s infinite`;
-    layer.appendChild(dp);
-  });
-})();
-
-/* ---- progress ---- */
-const prog=$('#prog');
-for(let i=0;i<STEPS;i++)prog.appendChild(document.createElement('span'));
-function paintProgress(){
-  $$('#prog span').forEach((el,i)=>{el.classList.toggle('done',i<cur);el.classList.toggle('active',i===cur)});
-}
-function showStep(n){
-  cur=n;
-  $('#intro').style.display=n===-1?'flex':'none';
-  $('#result').style.display='none';
-  $$('.step').forEach(s=>s.classList.toggle('show',+s.dataset.step===n));
-  prog.classList.toggle('hide',n===-1);
-  paintProgress();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-/* ---- hover / touch "red" stickiness ---- */
-$$('.opt').forEach(opt=>{
-  const on=()=>opt.classList.add('hot');
-  const off=()=>setTimeout(()=>opt.classList.remove('hot'),140); // 黏滯
-  opt.addEventListener('pointerenter',on);
-  opt.addEventListener('pointerdown',on);
-  opt.addEventListener('pointerleave',off);
-  opt.addEventListener('pointerup',off);
-  opt.addEventListener('pointercancel',off);
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const SPR={};
+['player','player_cap','enemy','token','brick','heart','heart_empty','cloud','hill_1','hill_2','hill_3'].forEach(k=>{
+  const img=new Image();
+  img.onload=()=>SPR[k]=img;
+  img.src='public/'+k+'.png';
 });
 
-/* ---- option select ---- */
-$$('.opts').forEach(group=>{
-  group.addEventListener('click',e=>{
-    const opt=e.target.closest('.opt');if(!opt)return;
-    [...group.children].forEach(c=>c.classList.remove('sel'));
-    opt.classList.add('sel');
-    const name=group.dataset.name;state[name]=opt.dataset.value;
-    if(name==='drink'){const p=presets[opt.dataset.value];if(p){$('#volume').value=p[0];$('#abv').value=p[1]}}
-    refreshNext();
-  });
-});
+const W=cv.width,H=cv.height;
 
-/* ---- sliders ---- */
-$('#weight').oninput=e=>$('#weightOut').textContent=e.target.value;
-$('#duration').oninput=e=>$('#durationOut').textContent=(+e.target.value).toFixed(1);
-
-/* ---- next enable ---- */
-function refreshNext(){
-  const step=$$('.step')[cur];if(!step)return;
-  const nb=step.querySelector('[data-next]');if(!nb)return;
-  const need={1:'sex',2:'drink',5:'food'};
-  if(cur===6){nb.disabled=!(state.flush&&state.med);return}
-  nb.disabled=need[cur]?!state[need[cur]]:false;
-}
-
-/* ---- nav ---- */
-$('#begin').onclick=()=>{showStep(0);refreshNext()};
-$$('[data-next]').forEach(b=>b.addEventListener('click',()=>{
-  if(b.id==='finish'){showResult();return}
-  showStep(cur+1);refreshNext();
-}));
-$$('[data-back]').forEach(b=>b.addEventListener('click',()=>{showStep(cur-1);if(cur>=0)refreshNext()}));
-
-/* ---- calc (logic preserved) ---- */
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function calc(){
-  const weight=+$('#weight').value,count=+$('#count').value,volume=+$('#volume').value,
-        abv=+$('#abv').value,duration=+$('#duration').value,sex=state.sex||'unspecified';
-  const grams=volume*count*(abv/100)*0.789;
-  const r=sex==='male'?.68:sex==='female'?.55:.615;
-  const foodFactor=state.food==='empty'?1.06:state.food==='light'?.94:.84;
-  const beta=.015;
-  const rawPeak=(grams/(weight*1000*r))*100*foodFactor;
-  const peak=Math.max(0,rawPeak-beta*duration*.5);
-  const clearHours=Math.max(duration,duration+peak/beta);
-  const standard=grams/14;
-  const acet=clamp((state.flush==='yes'?78:state.flush==='sometimes'?48:20)+(state.med==='yes'?20:0)+Math.min(18,standard*2),0,100);
-  const metabolic=clamp(standard*11+(duration<1?16:duration<2?8:0)+(state.food==='empty'?9:0),0,100);
-  let level='較低風險',cls='lvl-low';
-  if(peak>=.08||metabolic>=70){level='較高風險';cls='lvl-high'}
-  else if(peak>=.04||metabolic>=40){level='中等風險';cls='lvl-mid'}
-  return{grams,standard,peak,clearHours,acet,metabolic,level,cls,duration,food:state.food,flush:state.flush,med:state.med};
-}
-
-function drawCurve(d){
-  const c=$('#curve'),ctx=c.getContext('2d'),W=c.width,H=c.height,p=42;
-  ctx.clearRect(0,0,W,H);ctx.font='12px "Noto Serif TC",serif';
-  ctx.strokeStyle='rgba(246,236,216,.08)';ctx.fillStyle='#8a795e';ctx.lineWidth=1;
-  for(let i=0;i<5;i++){let y=p+i*(H-2*p)/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(W-p,y);ctx.stroke()}
-  const maxT=Math.max(6,Math.ceil(d.clearHours+1)),maxY=Math.max(.10,d.peak*1.2);
-  ctx.fillText('BAC %',8,20);ctx.fillText('時間(小時)',W-86,H-8);
-  for(let t=0;t<=maxT;t+=Math.ceil(maxT/6)){let x=p+(W-2*p)*t/maxT;ctx.fillText(t+'h',x-6,H-p+18)}
-  function bac(t){const a=Math.min(1,t/Math.max(.4,d.duration*.65));const rise=d.peak*(1-Math.pow(1-a,1.7));return Math.max(0,rise-Math.max(0,t-d.duration*.65)*.015)}
-  // animate draw
-  let prog2=0;
-  function frame(){
-    prog2=Math.min(1,prog2+.045);
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='rgba(246,236,216,.08)';ctx.fillStyle='#8a795e';ctx.lineWidth=1;ctx.font='12px "Noto Serif TC",serif';
-    for(let i=0;i<5;i++){let y=p+i*(H-2*p)/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(W-p,y);ctx.stroke()}
-    ctx.fillText('BAC %',8,20);ctx.fillText('時間(小時)',W-86,H-8);
-    for(let t=0;t<=maxT;t+=Math.ceil(maxT/6)){let x=p+(W-2*p)*t/maxT;ctx.fillText(t+'h',x-6,H-p+18)}
-    const N=Math.floor(180*prog2);
-    const grad=ctx.createLinearGradient(0,p,0,H-p);
-    grad.addColorStop(0,'rgba(240,181,74,.34)');grad.addColorStop(1,'rgba(240,181,74,0)');
-    ctx.beginPath();
-    for(let i=0;i<=N;i++){let t=maxT*i/180,x=p+(W-2*p)*t/maxT,y=H-p-(H-2*p)*bac(t)/maxY;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
-    if(N>0){let lastT=maxT*N/180,lx=p+(W-2*p)*lastT/maxT;ctx.lineTo(lx,H-p);ctx.lineTo(p,H-p);ctx.closePath();ctx.fillStyle=grad;ctx.fill()}
-    ctx.beginPath();
-    for(let i=0;i<=N;i++){let t=maxT*i/180,x=p+(W-2*p)*t/maxT,y=H-p-(H-2*p)*bac(t)/maxY;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
-    const lg=ctx.createLinearGradient(p,0,W-p,0);lg.addColorStop(0,'#f0b54a');lg.addColorStop(1,'#e24a3a');
-    ctx.strokeStyle=lg;ctx.lineWidth=3.5;ctx.lineJoin='round';ctx.stroke();
-    if(.08<maxY){let y=H-p-(H-2*p)*.08/maxY;ctx.setLineDash([6,5]);ctx.strokeStyle='#e24a3a';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(W-p,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e24a3a';ctx.fillText('0.08% 法定參考',W-p-110,y-7)}
-    if(prog2<1)requestAnimationFrame(frame);
-  }
-  frame();
-}
-
-function showResult(){
-  const d=calc();
-  $('#intro').style.display='none';
-  $$('.step').forEach(s=>s.classList.remove('show'));
-  $('#result').style.display='block';
-  cur=STEPS;paintProgress();
-  window.scrollTo({top:0,behavior:'smooth'});
-
-  $('#peak').textContent=d.peak.toFixed(3)+'%';$('#peak').className='r-peak '+d.cls;
-  $('#grams').textContent=d.grams.toFixed(1)+' g';
-  $('#clearTime').textContent=d.clearHours.toFixed(1)+' h';
-  $('#stdDrinks').textContent=d.standard.toFixed(1);
-  const pill=$('#riskPill');pill.textContent=d.level;pill.className='pill '+d.cls;
-
-  // glass fill proportional to peak (cap at .12), color by risk
-  const fillRatio=clamp(d.peak/.12,.08,1);
-  const liquid=$('#rLiquid');
-  const colors=d.cls==='lvl-high'?['#ff7a5c','#b8311f']:d.cls==='lvl-mid'?['#f7c95e','#cf7e22']:['#9fe09f','#3f9d5e'];
-  $('#rLiqTop').setAttribute('stop-color',colors[0]);
-  $('#rLiqBot').setAttribute('stop-color',colors[1]);
-  liquid.style.transform='translateY(160px)';
-  requestAnimationFrame(()=>setTimeout(()=>{liquid.style.transform=`translateY(${160-fillRatio*160}px)`},120));
-
-  requestAnimationFrame(()=>setTimeout(()=>{$('#acetMeter').style.width=d.acet+'%';$('#metMeter').style.width=d.metabolic+'%'},120));
-  $('#acetText').textContent=d.acet<35?'較低':d.acet<65?'中等':'較高';
-  $('#metText').textContent=d.metabolic<35?'較低':d.metabolic<65?'中等':'較高';
-
-  let why=[];
-  if(d.flush==='yes')why.push('容易臉紅可能提示乙醛反應較強,但不能單靠症狀判定 ALDH2 基因型');
-  if(d.med==='yes')why.push('藥物與酒精可能有交互作用,應向醫師或藥師確認');
-  if(d.food==='empty')why.push('空腹情境可能使酒精吸收更快');
-  if(!why.length)why.push('結果主要由酒精總量、體重、飲用時間與模型假設推算');
-  $('#explain').innerHTML='<b>模型解讀:</b>'+why.join(';')+'。<br><br><b>重要:</b>這是教學用估算,不可用來判斷能否駕駛、服藥或是否安全。';
-
-  drawCurve(d);
-}
-
-$('#reset').onclick=()=>{
-  state.sex=state.drink=state.food=state.flush=state.med=null;
-  $$('.opt').forEach(o=>o.classList.remove('sel'));
-  $('#weight').value=60;$('#weightOut').textContent='60';
-  $('#duration').value=2;$('#durationOut').textContent='2.0';
-  $('#volume').value=330;$('#abv').value=5;$('#count').value=2;
-  showStep(0);refreshNext();
+/* ---------- palette (site colors) ---------- */
+const COL={
+  sky1:'#5b8fe0', sky2:'#7fa9ec',
+  ground:'#d4892a', groundDark:'#b5731f', groundTop:'#f0b54a',
+  brick:'#c8772a', brickLine:'#8a4e16',
+  cream:'#f6ecd8', skin:'#f3d8a8',
+  player:'#3a78c0', player2:'#2a5a96', cap:'#e24a3a',
+  enemy:'#9a6bce', enemy2:'#6f3fb0', enemyEye:'#f6ecd8',
+  bottle:'#7ac77a', bottleCap:'#cf7e22',
+  medkit:'#f6ecd8', medCross:'#e24a3a',
+  flag:'#7ac77a', pole:'#bda988', hill:'#3f9d5e', cloud:'#f6ecd8',
+  amber:'#f0b54a', gold:'#f7c95e', shadow:'rgba(0,0,0,.25)'
 };
 
-showStep(-1);
+/* ---------- world ---------- */
+const TILE=32, GRAV=0.62, MOVE=0.85, FRICTION=.80, MAXVX=4.2, JUMP=12.2;
+const LEVEL_W=260; // tiles (加長一點,容納更多地形變化)
+let cam=0, score=0, lives=3, started=false, ended=false, won=false;
+let frame=0;
+let demo=false;
+
+/* ===== 安全跳躍上限(由物理模擬驗算得出) =====
+   最大跳躍高度 ≈ 3.9 格,助跑水平跨距 ≈ 5.4 格。
+   為了「難但保證過得去」,所有設計鎖在保守值:
+   - 任兩落腳點水平間距 ≤ 3 格(坑寬最多 3,寬坑必放踏腳石)
+   - 任兩落腳點高度差 ≤ 2 格
+*/
+const MAX_GAP=3;      // 單一可跳坑寬上限
+const MAX_STEP=2;     // 上下層高度差上限
+
+/* level layout */
+const solids=[]; // {x,y,w,h, ground:bool}  ground=主地面那一排
+function addSolid(tx,ty,tw,th,isGround){
+  solids.push({x:tx*TILE,y:ty*TILE,w:tw*TILE,h:th*TILE,ground:!!isGround});
+}
+// 記錄所有「可站立平台頂面」,給怪物/道具生成用 {x,y,w,top:y}
+let platforms=[];
+
+const TopRow=9;          // 主地面頂面所在 tile 列
+const GROUND_Y=TopRow;   // 沿用舊名
+
+function buildLevel(){
+  solids.length=0;
+  platforms.length=0;
+  const FLAG_TILE=LEVEL_W-6;
+
+  // 起點安全地面
+  let x=0;
+  addSolid(x,GROUND_Y,12,4,true);
+  platforms.push({x:0,y:GROUND_Y*TILE,w:12*TILE});
+  x+=12;
+
+  while(x<FLAG_TILE-16){
+    // --- 決定這次的坑 ---
+    // 30% 機率做「寬坑+踏腳石」: 兩個坑合併,中間放一塊浮石
+    let widePit = Math.random()<0.30;
+
+    if(widePit){
+      // 寬坑總寬 5~6 格,中間放一塊踏腳石,使任一段間距 ≤ 3
+      const total = 5+Math.floor(Math.random()*2); // 5 或 6
+      const stoneFromLeft = Math.min(MAX_GAP, Math.ceil(total/2)); // 左側間距≤3
+      // 左坑寬 = stoneFromLeft - 0 ... 踏腳石放在 x+stoneFromLeft
+      const stoneX = x + stoneFromLeft;
+      // 踏腳石高度:與地面同高或高 1 格(製造節奏變化,仍跳得上)
+      const stoneRaise = Math.random()<0.5?0:1;
+      const stoneY = GROUND_Y - stoneRaise;
+      addSolid(stoneX, stoneY, 1, 4, false);
+      platforms.push({x:stoneX*TILE, y:stoneY*TILE, w:1*TILE});
+      // 右坑:從踏腳石到下一塊地面,間距也要 ≤3
+      x += total;
+    } else {
+      // 普通坑寬 2~3 格
+      const gap = 2+Math.floor(Math.random()*(MAX_GAP-1)); // 2 或 3
+      x += gap;
+    }
+
+    // --- 主地面段 ---
+    const len = 5+Math.floor(Math.random()*6); // 5~10
+    addSolid(x,GROUND_Y,len,4,true);
+    platforms.push({x:x*TILE,y:GROUND_Y*TILE,w:len*TILE});
+
+    // --- 第二層(再高一層樓)---
+    // 在較長的地面段上,用階梯踏腳石搭出第二層平台
+    if(len>=6 && Math.random()<0.5){
+      const step1Y = GROUND_Y - MAX_STEP;        // 上 2 格
+      const baseX  = x + 1 + Math.floor(Math.random()*2);
+      const upLen  = 2+Math.floor(Math.random()*2); // 第二層平台寬 2~3
+      if(baseX+upLen < x+len-1){
+        addSolid(baseX, step1Y, upLen, 1, false);
+        platforms.push({x:baseX*TILE, y:step1Y*TILE, w:upLen*TILE});
+
+        // --- 偶爾再搭第三層 ---
+        if(Math.random()<0.4){
+          const step2Y = step1Y - MAX_STEP;       // 再上 2 格
+          const base2X = baseX + (Math.random()<0.5?1:-1)*1; // 水平錯開1格
+          const up2Len = 2;
+          // 確認第三層落在主地面段範圍內
+          if(base2X>=x+1 && base2X+up2Len < x+len-1){
+            addSolid(base2X, step2Y, up2Len, 1, false);
+            platforms.push({x:base2X*TILE, y:step2Y*TILE, w:up2Len*TILE});
+          }
+        }
+      }
+    } else if(Math.random()<0.45){
+      // 否則放一塊普通浮空平台(上 2 格)
+      const py = GROUND_Y - MAX_STEP;
+      const pw = 2+Math.floor(Math.random()*2);
+      const pxMax = len-pw-1;
+      if(pxMax>=1){
+        const pxs = x+1+Math.floor(Math.random()*pxMax);
+        addSolid(pxs,py,pw,1,false);
+        platforms.push({x:pxs*TILE,y:py*TILE,w:pw*TILE});
+      }
+    }
+
+    x+=len;
+  }
+
+  // 終點長地面
+  const endLen=Math.max(16,FLAG_TILE-x+6);
+  addSolid(x,GROUND_Y,endLen,4,true);
+  platforms.push({x:x*TILE,y:GROUND_Y*TILE,w:endLen*TILE});
+}
+
+/* enemies (alcohol monsters) — 每一層平台都可能生怪 */
+let enemies=[];
+function buildEnemies(){
+  enemies=[];
+  for(const p of platforms){
+    if(p.x < 16*TILE) continue;              // 起點附近不放
+    if(p.x > flag.x - TILE*5) continue;      // 終點附近不放
+    if(p.w < TILE*2) continue;               // 太短(像單格踏腳石)不放
+
+    // 每塊平台生怪機率,平台越寬越可能有怪
+    const wideBonus = p.w>=TILE*5 ? 0.18 : 0;
+    if(Math.random() > (0.42 + wideBonus)) continue;
+
+    // 寬平台可能放兩隻
+    const howMany = (p.w>=TILE*7 && Math.random()<0.45) ? 2 : 1;
+    for(let n=0;n<howMany;n++){
+      const margin=TILE;
+      const ex = p.x + margin + Math.random()*Math.max(1, p.w - margin*2 - 26);
+      const ey = p.y - 30;
+      enemies.push({
+        x:ex, y:ey, w:26, h:30,
+        vx:(enemies.length%2?-1:1)*(1.0+Math.random()*0.4), // 1.0~1.4,比原版快
+        alive:true, t:enemies.length*7,
+        homeTop:p.y                          // 記住自己這層的地面高度
+      });
+      if(enemies.length>=32) break;
+    }
+    if(enemies.length>=32) break;
+  }
+}
+
+/* medkits — 只放在主地面,且檢查上方淨空,不卡進建築 */
+let kits=[];
+function buildKits(){
+  kits=[];
+  let count=0;
+  for(const p of platforms){
+    if(p.y!==GROUND_Y*TILE)continue;          // 只放主地面
+    if(p.x > flag.x - TILE*4)continue;
+    if(p.w < TILE*3)continue;
+    if(Math.random()<0.35 && count<6){
+      const kx=p.x+Math.floor(p.w/2)-12;
+      const ky=(GROUND_Y-2)*TILE;
+      const box={x:kx,y:ky,w:24,h:22};
+      let blocked=false;
+      for(const o of solids){
+        if(box.x<o.x+o.w&&box.x+box.w>o.x&&box.y<o.y+o.h&&box.y+box.h>o.y){blocked=true;break}
+      }
+      if(blocked)continue;                    // 會卡進建築,放棄
+      kits.push({...box,taken:false,t:count*11});
+      count++;
+    }
+  }
+}
+
+/* amber tokens — 沿各層平台上方撒,不卡進磚塊、不越過終點 */
+let tokens=[];
+function buildTokens(){
+  tokens=[];
+  for(const p of platforms){
+    if(p.x > flag.x - TILE*4)continue;
+    const tilesWide=Math.floor(p.w/TILE);
+    if(tilesWide<2)continue;
+    for(let i=1;i<tilesWide-1;i+=2){
+      if(Math.random()<0.5)continue;
+      const tx=p.x+i*TILE+TILE/2;
+      const ty=p.y-TILE*(1+Math.floor(Math.random()*2));
+      if(tx>=flag.x-TILE*3)continue;
+      let blocked=false;
+      for(const o of solids){
+        if(tx>o.x&&tx<o.x+o.w&&ty>o.y&&ty<o.y+o.h){blocked=true;break}
+      }
+      if(blocked)continue;
+      tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
+    }
+  }
+}
+
+/* flag at end */
+const flag={x:(LEVEL_W-6)*TILE,y:(GROUND_Y-7)*TILE,w:6,h:7*TILE};
+
+/* player */
+const P={x:60,y:0,w:24,h:30,vx:0,vy:0,onGround:false,face:1,inv:0,dead:false};
+
+/* input */
+const keys={};
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key))e.preventDefault();
+  keys[e.key]=true;
+  if(e.key==='d'||e.key==='D'){
+    demo=!demo;
+    if(demo && !started){
+      document.getElementById('startScr').classList.add('hide');
+      reset(true);started=true;ended=false;
+    }
+  }
+});
+addEventListener('keyup',e=>keys[e.key]=false);
+// touch
+function bindTouch(id,k){
+  const el=document.getElementById(id);
+  const set=v=>e=>{e.preventDefault();keys[k]=v};
+  el.addEventListener('touchstart',set(true),{passive:false});
+  el.addEventListener('touchend',set(false),{passive:false});
+  el.addEventListener('touchcancel',set(false),{passive:false});
+  el.addEventListener('mousedown',set(true));
+  el.addEventListener('mouseup',set(false));
+  el.addEventListener('mouseleave',set(false));
+}
+bindTouch('tLeft','ArrowLeft');bindTouch('tRight','ArrowRight');bindTouch('tJump',' ');
+if('ontouchstart' in window)document.getElementById('touch').classList.add('on');
+
+/* ---------- physics helpers ---------- */
+function rectHit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function collideSolids(o){
+  o.onGround=false;
+  o.x+=o.vx;
+  for(const s of solids){if(rectHit(o,s)){
+    if(o.vx>0)o.x=s.x-o.w; else if(o.vx<0)o.x=s.x+s.w; o.vx=0;
+  }}
+  o.y+=o.vy;
+  for(const s of solids){if(rectHit(o,s)){
+    if(o.vy>0){o.y=s.y-o.h;o.onGround=true} else if(o.vy<0)o.y=s.y+s.h; o.vy=0;
+  }}
+}
+
+function reset(full){
+  buildLevel();buildEnemies();buildKits();buildTokens();
+  P.x=60;P.y=(GROUND_Y-2)*TILE;P.vx=0;P.vy=0;P.inv=0;P.dead=false;P.face=1;
+  cam=0;
+  if(full){score=0;lives=3;won=false;ended=false}
+}
+function respawn(){
+  let best=null,bestDist=1e9;
+  for(const s of solids){
+    if(s.y!==GROUND_Y*TILE)continue;
+    const cx=Math.max(s.x,Math.min(P.x,s.x+s.w-P.w));
+    const d=Math.abs(cx-P.x);
+    if(d<bestDist){bestDist=d;best={x:cx,y:s.y-P.h};}
+  }
+  if(best){P.x=best.x;P.y=best.y-40;}
+  else{P.x=Math.max(60,P.x-80);P.y=0;}
+  P.vx=0;P.vy=0;P.dead=false;P.inv=90;
+}
+
+/* ---------- update ---------- */
+function update(){
+  frame++;
+
+  // ===== 自動展示 AI =====
+  if(!demo){
+    if(keys.__ai){keys['ArrowRight']=false;keys[' ']=false;keys.__ai=false;}
+  }
+  if(demo && !P.dead){
+    keys.__ai=true;
+    keys['ArrowRight']=true; keys['ArrowLeft']=false;
+    let wantJump=false;
+
+    // 1) 提早偵測坑:檢查前方 0.6~2 格範圍腳下是否還有地面
+    if(P.onGround){
+      let gapAhead=true;
+      for(let d=0.6; d<=2.2; d+=0.4){
+        const probeX=P.x+P.w+d*TILE;
+        const footY=P.y+P.h+4;
+        for(const s of solids){
+          if(probeX>s.x&&probeX<s.x+s.w&&footY>=s.y&&footY<s.y+s.h+6){gapAhead=false;break}
+        }
+        if(!gapAhead)break;
+      }
+      if(gapAhead) wantJump=true;
+    }
+
+    // 2) 前方有酒精怪 → 跳上去踩它
+    for(const e of enemies){
+      if(!e.alive)continue;
+      const dx=e.x-(P.x+P.w);
+      if(dx>-6&&dx<TILE*2.2&&Math.abs(e.y-(P.y+P.h))<TILE*1.5){wantJump=true;break}
+    }
+
+    // 3) 前方有更高的平台/踏腳石擋路 → 跳上去
+    for(const s of solids){
+      const dx=s.x-(P.x+P.w);
+      if(dx>-6&&dx<TILE*1.6 && s.y<P.y+P.h-4 && s.y>P.y-TILE*3){
+        if(P.onGround){wantJump=true;break;}
+      }
+    }
+
+    keys[' ']=wantJump;
+  }
+
+  if(P.dead){
+    P.vy+=GRAV;P.y+=P.vy;
+    if(P.y>H+80){
+      if(lives<=0){endGame(false)} else {respawn()}
+    }
+    return;
+  }
+  // horizontal
+  if(keys['ArrowLeft']){P.vx-=MOVE;P.face=-1}
+  if(keys['ArrowRight']){P.vx+=MOVE;P.face=1}
+  P.vx*=FRICTION;
+  P.vx=Math.max(-MAXVX,Math.min(MAXVX,P.vx));
+  if(Math.abs(P.vx)<.05)P.vx=0;
+  // jump
+  if((keys[' ']||keys['ArrowUp'])&&P.onGround){P.vy=-JUMP;P.onGround=false}
+  P.vy+=GRAV;if(P.vy>16)P.vy=16;
+  collideSolids(P);
+  if(P.inv>0)P.inv--;
+
+  if(P.y>H+40 && !P.dead){
+    if(demo){respawn();}
+    else hurt(true);
+  }
+
+  // enemies
+  for(const e of enemies){
+    if(!e.alive)continue;
+    e.t++;
+    e.x+=e.vx;
+    for(const s of solids){
+      if(e.x<s.x+s.w&&e.x+e.w>s.x&&e.y<s.y+s.h&&e.y+e.h>s.y){
+        if(e.vx>0)e.x=s.x-e.w; else e.x=s.x+s.w; e.vx*=-1;
+      }
+    }
+    const aheadX=e.vx>0?e.x+e.w+2:e.x-2;
+    let support=false;
+    for(const s of solids){
+      if(aheadX>s.x&&aheadX<s.x+s.w&&Math.abs((e.y+e.h)-s.y)<6){support=true;break}
+    }
+    if(!support){
+      e.vx=-e.vx;
+      e.x+=e.vx>0?3:-3;
+      if(Math.abs(e.vx)<0.6)e.vx=(e.vx>=0?1:-1)*1.0;
+    }
+    if(P.inv===0&&!P.dead&&rectHit(P,e)){
+      const stomp = P.vy>0 && (P.y+P.h - e.y) < 18;
+      if(stomp){e.alive=false;P.vy=-7.5;score+=100;pop(e.x+e.w/2,e.y,'+100')}
+      else hurt(false);
+    }
+  }
+
+  // medkits
+  for(const k of kits){
+    if(k.taken)continue;k.t++;
+    if(rectHit(P,k)){k.taken=true;if(lives<3){lives++;pop(k.x+12,k.y,'+1 ❤')}else{score+=50;pop(k.x+12,k.y,'+50')}}
+  }
+  // tokens
+  for(const t of tokens){
+    if(t.taken)continue;t.t++;
+    if(P.x<t.x+t.r&&P.x+P.w>t.x-t.r&&P.y<t.y+t.r&&P.y+P.h>t.y-t.r){t.taken=true;score+=10}
+  }
+
+  // flag / win
+  if(P.x+P.w>flag.x+10 && !won){won=true;endGame(true)}
+
+  // camera
+  const target=P.x-W*0.38;
+  cam+=(target-cam)*0.12;
+  cam=Math.max(0,Math.min(cam,LEVEL_W*TILE-W));
+}
+
+let pops=[];
+function pop(x,y,txt){pops.push({x,y,txt,life:50})}
+
+function hurt(fatal){
+  if(demo)return;
+  if(P.inv>0&&!fatal)return;
+  lives--;
+  if(lives<=0||fatal){
+    P.dead=true;P.vy=-9;
+    if(lives<0)lives=0;
+  }else{
+    P.inv=90;P.vy=-7;P.vx=-P.face*4;
+  }
+}
+
+function endGame(victory){
+  ended=true;started=false;
+  document.getElementById('endScr').classList.remove('hide');
+  const t=document.getElementById('endTitle');
+  if(victory){t.textContent='平安到家! 🏁';t.className='win';
+    document.getElementById('endMsg').textContent='你成功避開了所有酒精怪。接下來,看看酒精在你體內的真實數據吧。';}
+  else{t.textContent='被酒精怪追上了…';t.className='lose';
+    document.getElementById('endMsg').textContent='沒關係。先看看酒精在身體裡會怎麼變化,再來挑戰一次。';}
+  document.getElementById('endScore').textContent='得分 '+score;
+}
+
+/* ---------- pixel drawing ---------- */
+function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+
+function drawBg(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,COL.sky2);g.addColorStop(1,COL.sky1);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const hillSizes=[120,90,105];
+  const span=180;
+  const start=Math.floor((cam*0.4)/span)-2;
+  for(let i=start;i<start+12;i++){
+    const m7=((i%7)+7)%7;
+    const m3=((i%3)+3)%3;
+    const offset=[0,-40,20,55,-25,35,-15][m7];
+    const hx=i*span - cam*0.4 - 90 + offset;
+    const idx=m3+1;
+    const hillSpr=SPR['hill_'+idx];
+    if(hillSpr){
+      const dispW=hillSizes[m3];
+      const dispH=dispW*(hillSpr.height/hillSpr.width);
+      ctx.save();
+      ctx.globalAlpha=0.82;
+      ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
+      ctx.restore();
+    } else {
+      drawHill(hx,GROUND_Y*TILE,120,70);
+    }
+  }
+  for(let i=0;i<8;i++){
+    const cx=i*260 - (cam*0.25)%260;
+    if(SPR.cloud)ctx.drawImage(SPR.cloud,cx+24,44+(i%3)*26,80,44);
+    else drawCloud(cx+40, 50+(i%3)*26);
+  }
+}
+function drawHill(x,baseY,w,h){
+  ctx.fillStyle=COL.hill;
+  ctx.beginPath();ctx.moveTo(x,baseY);ctx.quadraticCurveTo(x+w/2,baseY-h,x+w,baseY);ctx.closePath();ctx.fill();
+}
+function drawCloud(x,y){
+  ctx.fillStyle=COL.cloud;
+  [[0,8,16],[14,0,20],[30,6,16],[12,10,26]].forEach(([dx,dy,r])=>{ctx.beginPath();ctx.arc(x+dx,y+dy,r,0,7);ctx.fill()});
+}
+
+function drawGround(){
+  for(const s of solids){
+    const sx=Math.round(s.x-cam);
+    if(sx>W||sx+s.w<0)continue;
+    if(SPR.brick){
+      for(let ty=s.y;ty<s.y+s.h;ty+=TILE)
+        for(let tx=sx;tx<sx+s.w;tx+=TILE)
+          ctx.drawImage(SPR.brick,Math.round(tx),Math.round(ty),TILE,TILE);
+    } else {
+      px(sx,s.y,s.w,s.h,COL.ground);
+      px(sx,s.y,s.w,6,COL.groundTop);
+      ctx.strokeStyle=COL.brickLine;ctx.lineWidth=1;
+      for(let yy=s.y+6;yy<s.y+s.h;yy+=16){ctx.beginPath();ctx.moveTo(sx,yy+.5);ctx.lineTo(sx+s.w,yy+.5);ctx.stroke();}
+      for(let xx=sx+16;xx<sx+s.w;xx+=32){ctx.beginPath();ctx.moveTo(xx+.5,s.y+6);ctx.lineTo(xx+.5,s.y+s.h);ctx.stroke();}
+    }
+  }
+}
+
+function drawTokens(){
+  for(const t of tokens){
+    if(t.taken)continue;const x=t.x-cam,y=t.y;
+    if(x<-10||x>W+10)continue;
+    const bob=Math.sin((t.t)/12)*3;
+    if(SPR.token){ctx.drawImage(SPR.token,x-t.r,y+bob-t.r,t.r*2,t.r*2);}
+    else{ctx.fillStyle=COL.gold;ctx.beginPath();ctx.arc(x,y+bob,t.r,0,7);ctx.fill();
+    ctx.fillStyle=COL.amber2;ctx.beginPath();ctx.arc(x,y+bob,t.r*.5,0,7);ctx.fill();}
+  }
+}
+
+function drawKit(k){
+  if(k.taken)return;const x=k.x-cam,y=k.y+Math.sin(k.t/15)*3;
+  if(x<-30||x>W+30)return;
+  px(x,y,k.w,k.h,COL.medkit);
+  ctx.strokeStyle=COL.faint||'#8a795e';ctx.strokeRect(x+.5,y+.5,k.w-1,k.h-1);
+  px(x+k.w/2-3,y+4,6,k.h-8,COL.medCross);
+  px(x+5,y+k.h/2-3,k.w-10,6,COL.medCross);
+}
+
+function drawEnemy(e){
+  if(!e.alive)return;const x=e.x-cam,y=e.y;
+  if(x<-40||x>W+40)return;const sway=Math.sin(e.t/8)*1.5;
+  if(SPR.enemy){
+    const flip=e.vx>0?1:-1;
+    ctx.save();
+    if(flip<0){ctx.scale(-1,1);ctx.drawImage(SPR.enemy,-(x+e.w),y,e.w,e.h)}
+    else ctx.drawImage(SPR.enemy,x,y,e.w,e.h);
+    ctx.restore();
+    return;
+  }
+  px(x+sway,y+6,e.w,e.h-6,COL.enemy);
+  px(x+sway,y+6,e.w,5,COL.enemy2);
+  px(x+e.w/2-4+sway,y,8,8,COL.bottleCap);
+  px(x+5+sway,y+14,5,6,COL.enemyEye);
+  px(x+e.w-10+sway,y+14,5,6,COL.enemyEye);
+  px(x+6+sway,y+16,2,3,'#2a1c08');
+  px(x+e.w-9+sway,y+16,2,3,'#2a1c08');
+  ctx.strokeStyle='#2a1c08';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x+4+sway,y+12);ctx.lineTo(x+11+sway,y+15);
+  ctx.moveTo(x+e.w-4+sway,y+12);ctx.lineTo(x+e.w-11+sway,y+15);ctx.stroke();
+  const fp=Math.sin(e.t/6)>0?2:-2;
+  px(x+3+sway,y+e.h-3,7,4,COL.enemy2);
+  px(x+e.w-10+sway+fp,y+e.h-3,7,4,COL.enemy2);
+}
+
+function drawPlayer(){
+  if(P.inv>0 && frame%6<3 && !P.dead)return;
+  const x=P.x-cam,y=P.y,f=P.face;
+  if(SPR.player){
+    const spr=(!P.onGround&&SPR.player_cap)?SPR.player_cap:SPR.player;
+    ctx.save();
+    if(f<0){ctx.scale(-1,1);ctx.drawImage(spr,-(x+P.w),y,P.w,P.h)}
+    else ctx.drawImage(spr,x,y,P.w,P.h);
+    ctx.restore();
+    return;
+  }
+  const walk=P.onGround&&Math.abs(P.vx)>.6?Math.sin(frame/4):0;
+  px(x+4,y+24,6,6,COL.player2);
+  px(x+P.w-10,y+24-walk*2,6,6,COL.player2);
+  px(x+3,y+12,P.w-6,14,COL.player);
+  px(x+3,y+12,P.w-6,4,COL.player2);
+  px(x+5,y+2,P.w-10,12,COL.skin);
+  px(x+4,y,P.w-8,5,COL.cap);
+  px(f>0?x+P.w-6:x+2,y+2,4,3,COL.cap);
+  px(f>0?x+P.w-9:x+6,y+6,3,3,'#2a1c08');
+  px(f>0?x+P.w-5:x+1,y+13,4,8,COL.skin);
+}
+
+function drawFlag(){
+  const x=flag.x-cam;
+  if(x>W+40||x+flag.w*TILE<-40)return;
+  px(x,flag.y,5,flag.h,COL.pole);
+  const wav=Math.sin(frame/10)*4;
+  ctx.fillStyle=COL.flag;
+  ctx.beginPath();ctx.moveTo(x+5,flag.y+6);ctx.lineTo(x+40+wav,flag.y+18);ctx.lineTo(x+5,flag.y+30);ctx.closePath();ctx.fill();
+  px(x-12,(GROUND_Y)*TILE-18,30,18,COL.amber);
+  px(x+16,flag.y+13,5,8,COL.cream);px(x+13,flag.y+16,11,3,COL.cream);
+}
+
+function drawPops(){
+  ctx.font='bold 15px "Noto Serif TC",serif';ctx.textAlign='center';
+  pops=pops.filter(p=>p.life>0);
+  for(const p of pops){p.life--;p.y-=.6;
+    ctx.fillStyle=`rgba(247,201,94,${p.life/50})`;
+    ctx.fillText(p.txt,p.x-cam,p.y);
+  }
+  ctx.textAlign='left';
+}
+
+function drawHUD(){
+  ctx.font='bold 16px "Noto Serif TC",serif';
+  ctx.fillStyle='#000000';
+  ctx.fillText('得分 '+score,14,26);
+  for(let i=0;i<3;i++){
+    const on=i<lives;
+    if(SPR.heart&&SPR.heart_empty){
+      ctx.drawImage(on?SPR.heart:SPR.heart_empty,W-44-i*28,10,22,22);
+    }else{
+      const hx=W-30-i*26, hy=18;
+      ctx.fillStyle=on?COL.red:'rgba(246,236,216,.18)';
+      ctx.beginPath();
+      ctx.moveTo(hx,hy+4);ctx.bezierCurveTo(hx,hy,hx-7,hy,hx-7,hy+5);
+      ctx.bezierCurveTo(hx-7,hy+10,hx,hy+12,hx,hy+15);
+      ctx.bezierCurveTo(hx,hy+12,hx+7,hy+10,hx+7,hy+5);
+      ctx.bezierCurveTo(hx+7,hy,hx,hy,hx,hy+4);ctx.fill();
+    }
+  }
+  if(demo){ctx.fillStyle=COL.amber;ctx.font='bold 14px "Noto Serif TC",serif';ctx.fillText('● AUTO 自動展示中（按 D 關閉）',W/2-90,24);}
+  const prog=Math.min(1,P.x/(flag.x));
+  px(14,34,160,6,'rgba(246,236,216,.15)');
+  px(14,34,160*prog,6,'#003b8f');
+}
+
+/* ---------- loop ---------- */
+function loop(){
+  if(started&&!ended)update();
+  drawBg();drawGround();drawTokens();
+  for(const k of kits)drawKit(k);
+  for(const e of enemies)drawEnemy(e);
+  drawFlag();
+  drawPlayer();drawPops();drawHUD();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- buttons ---------- */
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('startScr').classList.add('hide');
+  reset(true);started=true;ended=false;
+};
+document.getElementById('againBtn').onclick=()=>{
+  document.getElementById('endScr').classList.add('hide');
+  reset(true);started=true;ended=false;
+};
+
+reset(true);started=false;
+loop();
 </script>
 </body>
 </html>
