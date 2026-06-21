@@ -164,17 +164,30 @@ function buildLevel(){
 let enemies=[];
 function buildEnemies(){
   enemies=[];
-  const spots=[24,34,46,52,63,72,78,88,98,108,118,130,142,152,162,172,184,196,206];
-  spots.forEach((tx,i)=>{
-    const ex=tx*TILE, ey=(GROUND_Y-1)*TILE;
-    // 檢查這隻怪腳下是不是有主地面，沒有就跳過（避免生在坑上）
-    const footY=ey+30;
-    let onGround=false;
-    for(const s of solids){
-      if(ex+13>s.x && ex+13<s.x+s.w && Math.abs(footY-s.y)<6){onGround=true;break}
-    }
-    if(onGround) enemies.push({x:ex,y:ey,w:26,h:30,vx:(i%2?-1:1)*0.9,alive:true,t:i*7});
-  });
+
+  for(const s of solids){
+    if(s.x < 18*TILE) continue;              // 起點附近不要放
+    if(s.x > flag.x - TILE*5) continue;      // 終點附近不要放
+    if(s.w < TILE*3) continue;               // 太短的平台不要放
+
+    // 地面和上層平台都可以生怪
+    if(Math.random() > 0.28) continue;
+
+    const ex = s.x + TILE + Math.random() * Math.max(1, s.w - TILE*3);
+    const ey = s.y - 30;
+
+    enemies.push({
+      x: ex,
+      y: ey,
+      w: 26,
+      h: 30,
+      vx: (enemies.length % 2 ? -1 : 1) * 0.9,
+      alive: true,
+      t: enemies.length * 7
+    });
+
+    if(enemies.length >= 18) break;
+  }
 }
 
 /* medkits */
@@ -378,7 +391,7 @@ function update(){
       e.x+=e.vx>0?3:-3;              // 往新方向推離邊緣，避免來回卡死
       if(Math.abs(e.vx)<0.6)e.vx=(e.vx>=0?1:-1)*0.9; // 速度太小就補回正常速度
     }
-    e.y=(GROUND_Y-1)*TILE;
+ 
     // collision with player
     if(P.inv===0&&!P.dead&&rectHit(P,e)){
       const stomp = P.vy>0 && (P.y+P.h - e.y) < 18;
