@@ -132,48 +132,61 @@ const GROUND_Y=9; // tile row where ground top sits (canvas 360/32 ≈ 11 rows)
 function buildLevel(){
   solids.length=0;
 
-  const flagTile=LEVEL_W-6;        // 旗子的 tile 位置，注意：這是格子，不是像素
-  const finalSafeStart=flagTile-26; // 從這裡開始到終點都做安全地面，不再生坑/平台
+  const flagTile=LEVEL_W-6;
+  const finalSafeStart=flagTile-30;
 
   let x=0;
 
-  // 起點安全地面
+  // 起點
   addSolid(x,GROUND_Y,14,3);
   x+=14;
 
   while(x<finalSafeStart){
-    // 長陸地：不再「一段地、一個坑」那種機械節奏
-    const len=10+Math.floor(Math.random()*14); // 10~23格
+
+    const progress=x/finalSafeStart;
+
+    // 難度逐漸增加，但保證可跳
+    const gapChance=0.25 + progress*0.25;
+    const platformChance=0.55 + progress*0.25;
+
+    // 隨機坑（2~3格，保證可跳）
+    if(x>20 && Math.random()<gapChance){
+      x+=2+Math.floor(Math.random()*2);
+    }
+
+    const len=6+Math.floor(Math.random()*12);
     const landEnd=Math.min(x+len,finalSafeStart);
     const realLen=landEnd-x;
 
     addSolid(x,GROUND_Y,realLen,3);
 
-    // 只有離終點夠遠時才生上層平台，避免旗子旁邊出現兩層建築
-    if(x < flagTile-36 && realLen>=8 && Math.random()<0.72){
-      const pw=3+Math.floor(Math.random()*3); // 第一層平台：3~5格
+    // 第一層平台
+    if(progress>0.1 && Math.random()<platformChance && realLen>6){
+      const pw=2+Math.floor(Math.random()*3);
       const pxs=x+1+Math.floor(Math.random()*Math.max(1,realLen-pw-1));
       addSolid(pxs,GROUND_Y-2,pw,1);
 
-      // 第二層平台：在第一層上方，恢復三層結構
-      if(Math.random()<0.45){
-        const pw2=2+Math.floor(Math.random()*2); // 2~3格
-        const pxs2=Math.min(x+realLen-pw2-1,Math.max(x+1,pxs+1));
-        addSolid(pxs2,GROUND_Y-4,pw2,1);
+      // 第二層（中後期更多）
+      if(progress>0.4 && Math.random()<0.5){
+        addSolid(pxs,GROUND_Y-4,2,1);
+
+        // 第三層極少量（後期）
+        if(progress>0.7 && Math.random()<0.25){
+          addSolid(pxs,GROUND_Y-6,2,1);
+        }
       }
     }
 
     x=landEnd;
 
-    // 坑不是每次都有；有時候下一段地面會直接接上，形成長陸地
-    if(x<finalSafeStart && Math.random()<0.45){
-      const gap=2+Math.floor(Math.random()*2); // 2~3格，避免4格跳不過
-      x+=gap;
+    // 不規律連接（避免節奏死板）
+    if(x<finalSafeStart && Math.random()<0.5){
+      x+=2+Math.floor(Math.random()*2);
     }
   }
 
-  // 終點安全跑道：旗子前後都是平地，沒有坑、沒有上層平台
-  addSolid(finalSafeStart,GROUND_Y,(flagTile+12)-finalSafeStart,3);
+  // 終點安全區
+  addSolid(flagTile*TILE,GROUND_Y,18,3);
 }
 
 /* enemies (alcohol monsters) */
@@ -182,18 +195,29 @@ function buildEnemies(){
   enemies=[];
 
   for(const s of solids){
-    if(s.x < 18*TILE) continue;                 // 起點附近不要放
-    if(s.x+s.w > flag.x - TILE*8) continue;     // 終點安全區不要放
-    if(s.w < TILE*3) continue;                  // 太短的平台不要放
+
+    if(s.x < 18*TILE) continue;
+    if(s.x > flag.x - TILE*6) continue;
+
+    if(s.w < TILE*3) continue;
 
     const row=s.y/TILE;
     const isGround=row===GROUND_Y;
     const isLayer1=row===GROUND_Y-2;
     const isLayer2=row===GROUND_Y-4;
-    if(!isGround && !isLayer1 && !isLayer2) continue;
+    const isLayer3=row===GROUND_Y-6;
 
-    // 每一層都有可能有怪，但不要太多
-    const chance=isGround?0.22:(isLayer1?0.30:0.34);
+    if(!isGround && !isLayer1 && !isLayer2 && !isLayer3) continue;
+
+    let chance=0.18;
+    if(isGround) chance=0.25;
+    if(isLayer1) chance=0.32;
+    if(isLayer2) chance=0.38;
+    if(isLayer3) chance=0.42;
+
+    const progress=s.x/(LEVEL_W*TILE);
+    chance += progress*0.1;
+
     if(Math.random()>chance) continue;
 
     const minX=s.x+6;
@@ -208,15 +232,15 @@ function buildEnemies(){
       y:ey,
       w:26,
       h:30,
-      vx:(enemies.length%2?-1:1)*0.9,
+      vx:(Math.random()<0.5?-1:1)*0.9,
       alive:true,
-      t:enemies.length*7,
-      minX:minX,            // 只能在出生平台內走
-      maxX:maxX,            // 到平台邊緣/坑前就回頭
+      t:0,
+      minX:minX,
+      maxX:maxX,
       floorY:s.y
     });
 
-    if(enemies.length>=20) break;
+    if(enemies.length>=28) break;
   }
 }
 
