@@ -41,16 +41,14 @@ a.btn{display:inline-block;text-decoration:none;text-align:center}
 .score-final{font-family:var(--serif);font-size:34px;color:var(--gold);margin:6px 0 4px}
 
 /* touch controls */
-.touch{display:none;pointer-events:none;width:min(960px,96vw);margin-top:10px;z-index:4}
-.touch.on{display:flex;justify-content:space-between;align-items:center}
-.tbtn{width:64px;height:64px;border-radius:50%;
+.touch{position:absolute;inset:0;z-index:4;display:none;pointer-events:none}
+.touch.on{display:block}
+.tbtn{position:absolute;bottom:16px;width:64px;height:64px;border-radius:50%;
   background:rgba(246,236,216,.14);border:2px solid rgba(246,236,216,.3);
   display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--cream);
   pointer-events:auto;user-select:none;backdrop-filter:blur(2px)}
 .tbtn:active{background:rgba(226,74,58,.4)}
-#tLeft{margin-left:18px}
-#tRight{margin-right:auto;margin-left:12px}
-#tJump{margin-right:18px;width:78px;height:78px;background:rgba(240,181,74,.25)}
+#tLeft{left:16px}#tRight{left:92px}#tJump{right:16px;width:78px;height:78px;background:rgba(240,181,74,.25)}
 .hintbar{margin-top:12px;color:var(--faint);font-size:12.5px;text-align:center;line-height:1.6}
 </style>
 </head>
@@ -81,15 +79,13 @@ a.btn{display:inline-block;text-decoration:none;text-align:center}
     </div>
   </div>
 
- 
-</div>
-   <!-- touch controls -->
+  <!-- touch controls -->
   <div class="touch" id="touch">
     <div class="tbtn" id="tLeft">◀</div>
     <div class="tbtn" id="tRight">▶</div>
     <div class="tbtn" id="tJump">⤒</div>
   </div>
-  
+</div>
 <div class="hintbar">推廣理性飲酒觀念，建立健康生活文化</div>
 
 <script>
@@ -148,7 +144,7 @@ function buildLevel(){
     addSolid(x,GROUND_Y,len,3);
     // 這段地面上，隨機決定要不要放一個浮空平台
     if(Math.random()<0.5){
-      const py=GROUND_Y-2;// 地面上2~3格高，跳得上
+      const py=GROUND_Y-3-Math.floor(Math.random()*2); // 地面上2~3格高，跳得上
       const pw=2+Math.floor(Math.random()*2);          // 寬2~3格
       const pxs=x+1+Math.floor(Math.random()*Math.max(1,len-pw-1));
       addSolid(pxs,py,pw,1);
@@ -164,30 +160,17 @@ function buildLevel(){
 let enemies=[];
 function buildEnemies(){
   enemies=[];
-
-  for(const s of solids){
-    if(s.x < 18*TILE) continue;              // 起點附近不要放
-    if(s.x > flag.x - TILE*5) continue;      // 終點附近不要放
-    if(s.w < TILE*3) continue;               // 太短的平台不要放
-
-    // 地面和上層平台都可以生怪
-    if(Math.random() > 0.28) continue;
-
-    const ex = s.x + TILE + Math.random() * Math.max(1, s.w - TILE*3);
-    const ey = s.y - 30;
-
-    enemies.push({
-      x: ex,
-      y: ey,
-      w: 26,
-      h: 30,
-      vx: (enemies.length % 2 ? -1 : 1) * 0.9,
-      alive: true,
-      t: enemies.length * 7
-    });
-
-    if(enemies.length >= 18) break;
-  }
+  const spots=[24,34,46,52,63,72,78,88,98,108,118,130,142,152,162,172,184,196,206];
+  spots.forEach((tx,i)=>{
+    const ex=tx*TILE, ey=(GROUND_Y-1)*TILE;
+    // 檢查這隻怪腳下是不是有主地面，沒有就跳過（避免生在坑上）
+    const footY=ey+30;
+    let onGround=false;
+    for(const s of solids){
+      if(ex+13>s.x && ex+13<s.x+s.w && Math.abs(footY-s.y)<6){onGround=true;break}
+    }
+    if(onGround) enemies.push({x:ex,y:ey,w:26,h:30,vx:(i%2?-1:1)*0.9,alive:true,t:i*7});
+  });
 }
 
 /* medkits */
@@ -213,15 +196,13 @@ function buildTokens(){
   tokens=[];
   // 沿著每一塊「主地面」上方撒金幣，飄在空中、不碰磚塊
   for(const s of solids){
-   if(s.y!==GROUND_Y*TILE || s.x > flag.x - TILE*4)continue;        // 只在主地面上方放
+    if(s.y!==GROUND_Y*TILE)continue;          // 只在主地面上方放
     const tilesWide=Math.floor(s.w/TILE);
     for(let i=1;i<tilesWide-1;i+=2){          // 每隔一格放一個，避免太密
       if(Math.random()<0.5)continue;          // 一半機率跳過，分佈自然
       const tx=s.x+i*TILE+TILE/2;
       const ty=s.y-TILE*(1+Math.floor(Math.random()*2)); // 地面上方1~2格高的空中
-     if(tx < flag.x - TILE*3){
-  tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
-}
+      tokens.push({x:tx,y:ty,r:7,taken:false,t:tokens.length*5});
     }
   }
 }
@@ -391,7 +372,7 @@ function update(){
       e.x+=e.vx>0?3:-3;              // 往新方向推離邊緣，避免來回卡死
       if(Math.abs(e.vx)<0.6)e.vx=(e.vx>=0?1:-1)*0.9; // 速度太小就補回正常速度
     }
- 
+    e.y=(GROUND_Y-1)*TILE;
     // collision with player
     if(P.inv===0&&!P.dead&&rectHit(P,e)){
       const stomp = P.vy>0 && (P.y+P.h - e.y) < 18;
@@ -457,31 +438,26 @@ function drawBg(){
   g.addColorStop(0,COL.sky2);g.addColorStop(1,COL.sky1);
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   // parallax hills
-   const hillSizes=[120,90,105];
-const span=180;
-const start=Math.floor((cam*0.4)/span)-2;
+   const hillSizes=[120,90,105]; // 三種盆栽各自的顯示寬度，大小不一樣
+  for(let i=0;i<14;i++){
+         const offset=[0,-40,20,55,-25,35,-15][i%7];
+    const span=180;
+    const scroll=(cam*0.4)%(span*14);            // 用整排總寬度循環，避免硬跳
+    const hx=i*span - scroll - 90 + offset;
 
-for(let i=start;i<start+12;i++){
-  const m7=((i%7)+7)%7;
-  const m3=((i%3)+3)%3;
-
-  const offset=[0,-40,20,55,-25,35,-15][m7];
-  const hx=i*span - cam*0.4 - 90 + offset;
-
-  const idx=m3+1;
-  const hillSpr=SPR['hill_'+idx];
-
-  if(hillSpr){
-    const dispW=hillSizes[m3];
-    const dispH=dispW*(hillSpr.height/hillSpr.width);
-    ctx.save();
-    ctx.globalAlpha=0.82;
-    ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
-    ctx.restore();
-  } else {
-    drawHill(hx,GROUND_Y*TILE,120,70);
+    const idx=i%3+1;              // 改成 3 種輪流：1、2、3
+    const hillSpr=SPR['hill_'+idx];
+    if(hillSpr){
+      const dispW=hillSizes[i%3];                          // 三種各自的寬
+      const dispH=dispW*(hillSpr.height/hillSpr.width);   // 高度照原圖比例
+      ctx.save();
+      ctx.globalAlpha=0.82;                               // 透明度（0~1，0.82微透）
+      ctx.drawImage(hillSpr,hx,GROUND_Y*TILE-dispH,dispW,dispH);
+      ctx.restore();                                      // restore 讓透明度只影響盆栽
+    } else {
+      drawHill(hx,GROUND_Y*TILE,120,70);
+    }
   }
-}
 
   // clouds
   for(let i=0;i<8;i++){
